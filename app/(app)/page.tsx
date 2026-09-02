@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { getSession } from "@/lib/auth"
 import { sanityFetch } from "@/lib/sanity"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,20 +13,21 @@ function getGreeting() {
 
 async function getCounts() {
   try {
-    const [applications, vehicles] = await Promise.all([
+    const [applications, needsAttention, vehicles] = await Promise.all([
       sanityFetch<number>(`count(*[_type == "rentalApplication"])`),
+      sanityFetch<number>(`count(*[_type == "rentalApplication" && status == "new"])`),
       sanityFetch<number>(`count(*[_type == "vehicle"])`),
     ])
 
-    return { applications, vehicles, connected: true as const }
+    return { applications, needsAttention, vehicles, connected: true as const }
   } catch {
-    return { applications: null, vehicles: null, connected: false as const }
+    return { applications: null, needsAttention: null, vehicles: null, connected: false as const }
   }
 }
 
 export default async function DashboardPage() {
   const session = await getSession()
-  const { applications, vehicles, connected } = await getCounts()
+  const { applications, needsAttention, vehicles, connected } = await getCounts()
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10 sm:px-10">
@@ -40,20 +42,24 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Rental applications
-            </CardTitle>
-            <FileText className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="font-serif text-3xl font-semibold text-foreground">
-              {applications ?? "—"}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">Total on record</p>
-          </CardContent>
-        </Card>
+        <Link href="/applications">
+          <Card className="transition-colors hover:border-accent/40">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Rental applications
+              </CardTitle>
+              <FileText className="size-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="font-serif text-3xl font-semibold text-foreground">
+                {applications ?? "—"}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {needsAttention ? `${needsAttention} need attention` : "Total on record"}
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

@@ -63,7 +63,14 @@ export default function LoginPage() {
         </div>
 
         <div className="relative flex flex-1 flex-col items-center justify-center gap-6">
-          <Image src="/images/logo.png" alt="Drive Boundless" width={220} height={202} priority />
+          <Image
+            src="/images/logo.png"
+            alt="Drive Boundless"
+            width={220}
+            height={202}
+            priority
+            className="h-[202px] w-[220px]"
+          />
           <p className="max-w-sm text-center font-serif text-lg text-neutral-300">
             The operations console behind every rental, from first inquiry to signed agreement.
           </p>
@@ -79,7 +86,14 @@ export default function LoginPage() {
       <div className="flex items-center justify-center px-6 py-16 sm:px-12">
         <div className="w-full max-w-sm">
           <div className="mb-10 flex flex-col items-center gap-4 lg:hidden">
-            <Image src="/images/logo.png" alt="Drive Boundless" width={72} height={66} priority />
+            <Image
+              src="/images/logo.png"
+              alt="Drive Boundless"
+              width={72}
+              height={66}
+              priority
+              className="h-[66px] w-[72px]"
+            />
           </div>
 
           <div className="mb-8">
