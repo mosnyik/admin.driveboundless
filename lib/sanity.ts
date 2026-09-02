@@ -55,7 +55,7 @@ export async function sanityMutate(mutations: SanityMutation[]) {
     throw new Error("Missing SANITY_API_WRITE_TOKEN environment variable.")
   }
 
-  const url = `https://${projectId}.api.sanity.io/${apiPathVersion}/data/mutate/${dataset}`
+  const url = `https://${projectId}.api.sanity.io/${apiPathVersion}/data/mutate/${dataset}?returnIds=true`
 
   const response = await fetch(url, {
     method: "POST",
@@ -74,7 +74,12 @@ export async function sanityMutate(mutations: SanityMutation[]) {
   return response.json()
 }
 
-export async function uploadSanityFile(file: Uint8Array, contentType: string, filename: string) {
+async function uploadSanityAsset(
+  kind: "files" | "images",
+  file: Uint8Array,
+  contentType: string,
+  filename: string,
+) {
   const token = process.env.SANITY_API_WRITE_TOKEN
 
   if (!projectId || !dataset) {
@@ -85,7 +90,7 @@ export async function uploadSanityFile(file: Uint8Array, contentType: string, fi
     throw new Error("Missing SANITY_API_WRITE_TOKEN environment variable.")
   }
 
-  const url = new URL(`https://${projectId}.api.sanity.io/${apiPathVersion}/assets/files/${dataset}`)
+  const url = new URL(`https://${projectId}.api.sanity.io/${apiPathVersion}/assets/${kind}/${dataset}`)
   url.searchParams.set("filename", filename)
 
   const response = await fetch(url, {
@@ -99,14 +104,22 @@ export async function uploadSanityFile(file: Uint8Array, contentType: string, fi
 
   if (!response.ok) {
     const text = await response.text().catch(() => "")
-    throw new Error(`Sanity file upload failed: ${response.status} ${response.statusText} ${text}`)
+    throw new Error(`Sanity ${kind} upload failed: ${response.status} ${response.statusText} ${text}`)
   }
 
   const body = (await response.json()) as { document?: { _id?: string } }
 
   if (!body.document?._id) {
-    throw new Error("Sanity file upload did not return an asset id.")
+    throw new Error(`Sanity ${kind} upload did not return an asset id.`)
   }
 
   return body.document._id
+}
+
+export function uploadSanityFile(file: Uint8Array, contentType: string, filename: string) {
+  return uploadSanityAsset("files", file, contentType, filename)
+}
+
+export function uploadSanityImage(file: Uint8Array, contentType: string, filename: string) {
+  return uploadSanityAsset("images", file, contentType, filename)
 }
