@@ -28,7 +28,7 @@ async function hasValidSession(request: NextRequest) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (pathname.startsWith("/api/auth/")) {
+  if (pathname.startsWith("/api/auth/") || pathname.startsWith("/api/webhooks/")) {
     return NextResponse.next()
   }
 

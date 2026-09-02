@@ -53,6 +53,12 @@ export interface VehicleChangeEntry {
   previousAgreementPdfUrl: string | null
 }
 
+export interface AgreementEmailEntry {
+  sentAt: string
+  sentBy: string
+  sentTo: string
+}
+
 export interface ApplicationDetail {
   id: string
   status: ApplicationStatus
@@ -60,6 +66,7 @@ export interface ApplicationDetail {
   statusUpdatedAt: string | null
   statusHistory: StatusHistoryEntry[]
   vehicleChangeHistory: VehicleChangeEntry[]
+  agreementEmailHistory: AgreementEmailEntry[]
   renter: {
     fullName: string
     phone: string

@@ -9,6 +9,7 @@ import { STATUS_CONFIG } from "@/components/admin/status-badge"
 import { StatusMenu } from "@/components/admin/status-menu"
 import { WaitingFlag } from "@/components/admin/waiting-flag"
 import { VehicleChangeDialog } from "@/components/admin/vehicle-change-dialog"
+import { SendAgreementButton } from "@/components/admin/send-agreement-button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -323,17 +324,47 @@ export default async function ApplicationDetailPage({
               <Field label="Owner signature" value={agreement.ownerSignature} />
             </div>
             {agreement.pdfUrl && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-auto w-full justify-start px-4 py-2.5 text-left whitespace-normal sm:w-auto"
-                asChild
-              >
-                <a href={agreement.pdfUrl} target="_blank" rel="noreferrer">
-                  <Download className="size-4 shrink-0" />
-                  Download signed agreement (PDF)
-                </a>
-              </Button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-auto w-full justify-start px-4 py-2.5 text-left whitespace-normal sm:w-auto"
+                  asChild
+                >
+                  <a href={agreement.pdfUrl} target="_blank" rel="noreferrer">
+                    <Download className="size-4 shrink-0" />
+                    Download signed agreement (PDF)
+                  </a>
+                </Button>
+                <SendAgreementButton applicationId={application.id} />
+              </div>
+            )}
+
+            {application.agreementEmailHistory.length > 0 && (
+              <div className="border-t pt-4">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Sent to customer
+                </p>
+                <ul className="space-y-1.5">
+                  {application.agreementEmailHistory.map((entry, index) => (
+                    <li
+                      key={index}
+                      className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground"
+                    >
+                      <span>
+                        {entry.sentTo} by {entry.sentBy}
+                      </span>
+                      <span
+                        className="text-xs"
+                        title={formatDate(entry.sentAt, "MMMM d, yyyy 'at' h:mm a")}
+                        suppressHydrationWarning
+                      >
+                        {formatDistanceToNowStrict(new Date(entry.sentAt), { addSuffix: true })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </CardContent>
         </Card>

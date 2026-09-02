@@ -42,6 +42,11 @@ const detailQuery = `*[_type == "rentalApplication" && _id == $id][0]{
     newVehicleLabel,
     "previousAgreementPdfUrl": previousAgreementPdf.asset->url
   },
+  "agreementEmailHistory": agreementEmailHistory[] | order(sentAt desc){
+    sentAt,
+    sentBy,
+    sentTo
+  },
   renter,
   license{
     number,
@@ -84,6 +89,7 @@ export async function getApplicationById(id: string) {
     ...result,
     statusHistory: result.statusHistory ?? [],
     vehicleChangeHistory: result.vehicleChangeHistory ?? [],
+    agreementEmailHistory: result.agreementEmailHistory ?? [],
     renter: result.renter ?? {
       fullName: "",
       phone: "",
