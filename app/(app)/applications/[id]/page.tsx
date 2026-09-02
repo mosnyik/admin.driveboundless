@@ -1,10 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { format } from "date-fns"
-import { ArrowLeft, Download, FileCheck2, FileX2 } from "lucide-react"
+import { format, formatDistanceToNowStrict } from "date-fns"
+import { ArrowLeft, ArrowRight, Download, FileCheck2, FileX2 } from "lucide-react"
 import { getApplicationById } from "@/lib/applications"
-import { StatusBadge } from "@/components/admin/status-badge"
+import { STATUS_CONFIG } from "@/components/admin/status-badge"
+import { StatusMenu } from "@/components/admin/status-menu"
+import { WaitingFlag } from "@/components/admin/waiting-flag"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -64,10 +66,49 @@ export default async function ApplicationDetailPage({
             Submitted {formatDate(application.submittedAt, "MMMM d, yyyy 'at' h:mm a")}
           </p>
         </div>
-        <StatusBadge status={application.status} className="mt-1" />
+        <div className="flex flex-col items-end gap-1.5">
+          <StatusMenu applicationId={application.id} status={application.status} />
+          <WaitingFlag status={application.status} since={application.statusUpdatedAt} />
+        </div>
       </div>
 
       <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-lg">Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {application.statusHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No status changes yet — this application is still {STATUS_CONFIG[application.status].label}.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {application.statusHistory.map((entry, index) => (
+                  <li key={index} className="flex items-center justify-between gap-4 text-sm">
+                    <span className="flex items-center gap-1.5 text-foreground">
+                      {entry.from ? (
+                        <>
+                          <span className="text-muted-foreground">{STATUS_CONFIG[entry.from].label}</span>
+                          <ArrowRight className="size-3.5 text-muted-foreground" />
+                        </>
+                      ) : null}
+                      <span className="font-medium">{STATUS_CONFIG[entry.to].label}</span>
+                      <span className="text-muted-foreground">by {entry.changedBy}</span>
+                    </span>
+                    <span
+                      className="shrink-0 text-xs text-muted-foreground"
+                      title={formatDate(entry.changedAt, "MMMM d, yyyy 'at' h:mm a")}
+                    >
+                      {formatDistanceToNowStrict(new Date(entry.changedAt), { addSuffix: true })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="font-serif text-lg">Renter</CardTitle>

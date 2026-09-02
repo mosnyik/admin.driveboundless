@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { ApplicationStatus } from "@/lib/applications"
+import type { ApplicationStatus } from "@/lib/application-types"
 
-const STATUS_CONFIG: Record<ApplicationStatus, { label: string; className: string }> = {
+export const STATUS_CONFIG: Record<ApplicationStatus, { label: string; className: string }> = {
   new: {
     label: "New",
     className: "border-warning/30 bg-warning/15 text-warning-foreground dark:text-warning",

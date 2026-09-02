@@ -1,31 +1,15 @@
+import "server-only"
+
 import { sanityFetch } from "@/lib/sanity"
+import type { ApplicationDetail, ApplicationListItem } from "@/lib/application-types"
 
-export type ApplicationStatus = "new" | "contacted" | "approved" | "declined"
-
-export type ApplicationBucket = "needs-attention" | "in-progress" | "completed"
-
-export function bucketForStatus(status: ApplicationStatus): ApplicationBucket {
-  if (status === "new") return "needs-attention"
-  if (status === "contacted") return "in-progress"
-  return "completed"
-}
-
-export interface ApplicationListItem {
-  id: string
-  status: ApplicationStatus
-  submittedAt: string | null
-  renterName: string
-  renterEmail: string
-  renterPhone: string
-  vehicleLabel: string | null
-  startDate: string | null
-  endDate: string | null
-}
+export * from "@/lib/application-types"
 
 const listQuery = `*[_type == "rentalApplication"] | order(submittedAt desc) {
   "id": _id,
   status,
   submittedAt,
+  "statusUpdatedAt": coalesce(statusUpdatedAt, submittedAt),
   "renterName": renter.fullName,
   "renterEmail": renter.email,
   "renterPhone": renter.phone,
@@ -39,76 +23,17 @@ export async function getApplications() {
   return results ?? []
 }
 
-export interface ApplicationDetail {
-  id: string
-  status: ApplicationStatus
-  submittedAt: string | null
-  renter: {
-    fullName: string
-    phone: string
-    email: string
-    address: {
-      street: string
-      city: string
-      state: string
-      zip: string
-    }
-  }
-  license: {
-    number: string
-    state: string
-    expiry: string
-    fileUrl: string | null
-    fileName: string | null
-  }
-  insurance: {
-    carrier?: string
-    policyNumber?: string
-  }
-  rental: {
-    purpose: string
-    startDate: string
-    startTime: string
-    endDate: string
-    endTime: string
-    visitorTimeZone: string
-    rentalRate: "day" | "week"
-    paymentDueDay: string
-    mileageAllowance: string
-    additionalNotes?: string
-  }
-  selectedVehicle: {
-    label: string
-    color: string
-    pricePerDay: number
-    pricePerWeek: number
-    selectedRate: "day" | "week"
-    selectedRatePrice: number
-    vehicleId: string | null
-    vehicleImage: string | null
-  } | null
-  additionalDrivers: Array<{
-    name: string
-    licenseNumber: string
-    licenseState: string
-  }>
-  agreementAccepted: boolean
-  agreement: {
-    accepted: boolean
-    acceptedAt: string | null
-    renterSignature: string
-    ownerSignature: string
-    ownerSignedDate: string
-    pdfUrl: string | null
-    renderedHtml: string | null
-    plainText: string | null
-  }
-}
-
 const detailQuery = `*[_type == "rentalApplication" && _id == $id][0]{
   "id": _id,
   status,
   submittedAt,
+  "statusUpdatedAt": coalesce(statusUpdatedAt, submittedAt),
+  "statusHistory": statusHistory[] | order(changedAt desc){
+    from,
+    to,
+    changedAt,
+    changedBy
+  },
   renter,
   license{
     number,
@@ -144,5 +69,41 @@ const detailQuery = `*[_type == "rentalApplication" && _id == $id][0]{
 }`
 
 export async function getApplicationById(id: string) {
-  return sanityFetch<ApplicationDetail>(detailQuery, { id })
+  const result = await sanityFetch<ApplicationDetail>(detailQuery, { id })
+  if (!result) return null
+
+  return {
+    ...result,
+    statusHistory: result.statusHistory ?? [],
+    renter: result.renter ?? {
+      fullName: "",
+      phone: "",
+      email: "",
+      address: { street: "", city: "", state: "", zip: "" },
+    },
+    license: result.license ?? { number: "", state: "", expiry: "", fileUrl: null, fileName: null },
+    insurance: result.insurance ?? {},
+    rental: result.rental ?? {
+      purpose: "",
+      startDate: "",
+      startTime: "",
+      endDate: "",
+      endTime: "",
+      visitorTimeZone: "",
+      rentalRate: "week",
+      paymentDueDay: "",
+      mileageAllowance: "",
+    },
+    additionalDrivers: result.additionalDrivers ?? [],
+    agreement: result.agreement ?? {
+      accepted: false,
+      acceptedAt: null,
+      renterSignature: "",
+      ownerSignature: "",
+      ownerSignedDate: "",
+      pdfUrl: null,
+      renderedHtml: null,
+      plainText: null,
+    },
+  }
 }

@@ -1,3 +1,5 @@
+import "server-only"
+
 const projectId = process.env.SANITY_PROJECT_ID ?? process.env.NEXT_PUBLIC_SANITY_PROJECT_ID
 const dataset = process.env.SANITY_DATASET ?? process.env.NEXT_PUBLIC_SANITY_DATASET ?? "production"
 const apiVersion = process.env.SANITY_API_VERSION ?? "2025-05-16"
@@ -38,4 +40,36 @@ export async function sanityFetch<T>(query: string, params: Record<string, strin
   }
 
   return body.result ?? null
+}
+
+type SanityMutation = Record<string, unknown>
+
+export async function sanityMutate(mutations: SanityMutation[]) {
+  const token = process.env.SANITY_API_WRITE_TOKEN
+
+  if (!projectId || !dataset) {
+    throw new Error("Missing SANITY_PROJECT_ID or SANITY_DATASET environment variable.")
+  }
+
+  if (!token) {
+    throw new Error("Missing SANITY_API_WRITE_TOKEN environment variable.")
+  }
+
+  const url = `https://${projectId}.api.sanity.io/${apiPathVersion}/data/mutate/${dataset}`
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ mutations }),
+  })
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "")
+    throw new Error(`Sanity mutation failed: ${response.status} ${response.statusText} ${text}`)
+  }
+
+  return response.json()
 }

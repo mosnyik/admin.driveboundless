@@ -7,8 +7,9 @@ import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { StatusBadge } from "@/components/admin/status-badge"
-import { bucketForStatus, type ApplicationBucket, type ApplicationListItem } from "@/lib/applications"
+import { StatusMenu } from "@/components/admin/status-menu"
+import { WaitingFlag } from "@/components/admin/waiting-flag"
+import { bucketForStatus, type ApplicationBucket, type ApplicationListItem } from "@/lib/application-types"
 
 const BUCKETS: { value: ApplicationBucket; label: string }[] = [
   { value: "needs-attention", label: "Needs attention" },
@@ -115,17 +116,28 @@ export function ApplicationsView({ applications }: { applications: ApplicationLi
               {/* Mobile & tablet: stacked cards */}
               <div className="grid gap-3 sm:grid-cols-2 lg:hidden">
                 {filtered.map((application) => (
-                  <button
+                  <div
                     key={application.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => router.push(`/applications/${application.id}`)}
-                    className="w-full rounded-lg border bg-card p-4 text-left transition-colors hover:bg-muted/40"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault()
+                        router.push(`/applications/${application.id}`)
+                      }
+                    }}
+                    className="w-full cursor-pointer rounded-lg border bg-card p-4 text-left transition-colors outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <p className="truncate font-medium text-foreground">
                         {application.renterName || "Untitled applicant"}
                       </p>
-                      <StatusBadge status={application.status} className="shrink-0" />
+                      <StatusMenu
+                        applicationId={application.id}
+                        status={application.status}
+                        className="shrink-0"
+                      />
                     </div>
                     <p className="mt-1 truncate text-sm text-muted-foreground">
                       {application.renterEmail || application.renterPhone || "—"}
@@ -137,7 +149,12 @@ export function ApplicationsView({ applications }: { applications: ApplicationLi
                     <p className="mt-1 text-xs text-muted-foreground">
                       {formatDateRange(application.startDate, application.endDate)}
                     </p>
-                  </button>
+                    <WaitingFlag
+                      status={application.status}
+                      since={application.statusUpdatedAt}
+                      className="mt-2"
+                    />
+                  </div>
                 ))}
               </div>
 
@@ -146,12 +163,12 @@ export function ApplicationsView({ applications }: { applications: ApplicationLi
                 <Table className="table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[18%]">Renter</TableHead>
-                      <TableHead className="w-[24%]">Contact</TableHead>
-                      <TableHead className="w-[18%]">Vehicle</TableHead>
-                      <TableHead className="w-[16%]">Rental dates</TableHead>
-                      <TableHead className="w-[8%]">Status</TableHead>
-                      <TableHead className="w-[16%] text-right">Submitted</TableHead>
+                      <TableHead className="w-[16%]">Renter</TableHead>
+                      <TableHead className="w-[22%]">Contact</TableHead>
+                      <TableHead className="w-[16%]">Vehicle</TableHead>
+                      <TableHead className="w-[14%]">Rental dates</TableHead>
+                      <TableHead className="w-[17%]">Status</TableHead>
+                      <TableHead className="w-[15%] text-right">Submitted</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -182,8 +199,13 @@ export function ApplicationsView({ applications }: { applications: ApplicationLi
                         <TableCell className="truncate text-muted-foreground">
                           {formatDateRange(application.startDate, application.endDate)}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          <StatusBadge status={application.status} />
+                        <TableCell>
+                          <StatusMenu applicationId={application.id} status={application.status} />
+                          <WaitingFlag
+                            status={application.status}
+                            since={application.statusUpdatedAt}
+                            className="mt-1"
+                          />
                         </TableCell>
                         <TableCell className="truncate text-right text-muted-foreground">
                           {formatSubmitted(application.submittedAt)}
