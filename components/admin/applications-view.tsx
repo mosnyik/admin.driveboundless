@@ -144,7 +144,9 @@ export function ApplicationsView({ applications }: { applications: ApplicationLi
                     </p>
                     <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
                       <span className="truncate">{application.vehicleLabel || "—"}</span>
-                      <span className="shrink-0">{formatSubmitted(application.submittedAt)}</span>
+                      <span className="shrink-0" suppressHydrationWarning>
+                        {formatSubmitted(application.submittedAt)}
+                      </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {formatDateRange(application.startDate, application.endDate)}
@@ -207,7 +209,10 @@ export function ApplicationsView({ applications }: { applications: ApplicationLi
                             className="mt-1"
                           />
                         </TableCell>
-                        <TableCell className="truncate text-right text-muted-foreground">
+                        <TableCell
+                          className="truncate text-right text-muted-foreground"
+                          suppressHydrationWarning
+                        >
                           {formatSubmitted(application.submittedAt)}
                         </TableCell>
                       </TableRow>

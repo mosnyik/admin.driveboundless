@@ -4,9 +4,11 @@ import { notFound } from "next/navigation"
 import { format, formatDistanceToNowStrict } from "date-fns"
 import { ArrowLeft, ArrowRight, Download, FileCheck2, FileX2 } from "lucide-react"
 import { getApplicationById } from "@/lib/applications"
+import { getVehicleOptions } from "@/lib/vehicles"
 import { STATUS_CONFIG } from "@/components/admin/status-badge"
 import { StatusMenu } from "@/components/admin/status-menu"
 import { WaitingFlag } from "@/components/admin/waiting-flag"
+import { VehicleChangeDialog } from "@/components/admin/vehicle-change-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -39,7 +41,7 @@ export default async function ApplicationDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const application = await getApplicationById(id)
+  const [application, vehicles] = await Promise.all([getApplicationById(id), getVehicleOptions()])
 
   if (!application) {
     notFound()
@@ -99,6 +101,7 @@ export default async function ApplicationDetailPage({
                     <span
                       className="shrink-0 text-xs text-muted-foreground"
                       title={formatDate(entry.changedAt, "MMMM d, yyyy 'at' h:mm a")}
+                      suppressHydrationWarning
                     >
                       {formatDistanceToNowStrict(new Date(entry.changedAt), { addSuffix: true })}
                     </span>
@@ -139,9 +142,14 @@ export default async function ApplicationDetailPage({
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Uploaded copy</p>
               {license.fileUrl ? (
-                <Button variant="outline" size="sm" className="mt-1.5" asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-1.5 h-auto w-full justify-start px-4 py-2.5 text-left whitespace-normal sm:w-auto"
+                  asChild
+                >
                   <a href={license.fileUrl} target="_blank" rel="noreferrer">
-                    <Download className="size-4" />
+                    <Download className="size-4 shrink-0" />
                     {license.fileName || "Download license"}
                   </a>
                 </Button>
@@ -186,7 +194,14 @@ export default async function ApplicationDetailPage({
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-serif text-lg">Selected vehicle</CardTitle>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="font-serif text-lg">Selected vehicle</CardTitle>
+              <VehicleChangeDialog
+                applicationId={application.id}
+                currentVehicleLabel={selectedVehicle?.label ?? null}
+                vehicles={vehicles}
+              />
+            </div>
           </CardHeader>
           <CardContent>
             {selectedVehicle ? (
@@ -211,6 +226,57 @@ export default async function ApplicationDetailPage({
             )}
           </CardContent>
         </Card>
+
+        {application.vehicleChangeHistory.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif text-lg">Vehicle history</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {application.vehicleChangeHistory.map((entry, index) => (
+                <div key={index}>
+                  {index > 0 && <Separator className="mb-4" />}
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="flex flex-wrap items-center gap-1.5 text-sm text-foreground">
+                        {entry.previousVehicleLabel ? (
+                          <>
+                            <span className="text-muted-foreground">{entry.previousVehicleLabel}</span>
+                            <ArrowRight className="size-3.5 text-muted-foreground" />
+                          </>
+                        ) : null}
+                        <span className="font-medium">{entry.newVehicleLabel}</span>
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">{entry.reason}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        by {entry.changedBy} ·{" "}
+                        <span
+                          title={formatDate(entry.changedAt, "MMMM d, yyyy 'at' h:mm a")}
+                          suppressHydrationWarning
+                        >
+                          {formatDistanceToNowStrict(new Date(entry.changedAt), { addSuffix: true })}
+                        </span>
+                      </p>
+                    </div>
+                    {entry.previousAgreementPdfUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-auto w-full justify-start px-4 py-2.5 text-left whitespace-normal sm:w-auto sm:shrink-0"
+                        asChild
+                      >
+                        <a href={entry.previousAgreementPdfUrl} target="_blank" rel="noreferrer">
+                          <Download className="size-4 shrink-0" />
+                          Previous agreement
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {additionalDrivers.length > 0 && (
           <Card>
@@ -257,9 +323,14 @@ export default async function ApplicationDetailPage({
               <Field label="Owner signature" value={agreement.ownerSignature} />
             </div>
             {agreement.pdfUrl && (
-              <Button variant="outline" size="sm" asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-auto w-full justify-start px-4 py-2.5 text-left whitespace-normal sm:w-auto"
+                asChild
+              >
                 <a href={agreement.pdfUrl} target="_blank" rel="noreferrer">
-                  <Download className="size-4" />
+                  <Download className="size-4 shrink-0" />
                   Download signed agreement (PDF)
                 </a>
               </Button>

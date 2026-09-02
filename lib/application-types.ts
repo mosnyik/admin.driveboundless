@@ -44,12 +44,22 @@ export interface StatusHistoryEntry {
   changedBy: string
 }
 
+export interface VehicleChangeEntry {
+  changedAt: string
+  changedBy: string
+  reason: string
+  previousVehicleLabel: string | null
+  newVehicleLabel: string
+  previousAgreementPdfUrl: string | null
+}
+
 export interface ApplicationDetail {
   id: string
   status: ApplicationStatus
   submittedAt: string | null
   statusUpdatedAt: string | null
   statusHistory: StatusHistoryEntry[]
+  vehicleChangeHistory: VehicleChangeEntry[]
   renter: {
     fullName: string
     phone: string
