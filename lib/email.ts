@@ -2,7 +2,8 @@ import "server-only"
 
 import { Resend } from "resend"
 
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Drive Boundless <onboarding@resend.dev>"
+const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL?.trim() || "onboarding@resend.dev"
+const DEFAULT_FROM_NAME = "Drive Boundless"
 
 let client: Resend | null = null
 
@@ -25,14 +26,23 @@ interface SendEmailInput {
   subject: string
   html: string
   text: string
+  /** Display name shown before the address, e.g. "New Rental Alert". Defaults to "Drive Boundless". */
+  fromName?: string
   attachments?: Array<{ filename: string; content: Buffer }>
 }
 
-export async function sendEmail({ to, subject, html, text, attachments }: SendEmailInput) {
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+  attachments,
+  fromName = DEFAULT_FROM_NAME,
+}: SendEmailInput) {
   const resend = getClient()
 
   const { data, error } = await resend.emails.send({
-    from: FROM_EMAIL,
+    from: `${fromName} <${FROM_ADDRESS}>`,
     to,
     subject,
     html,

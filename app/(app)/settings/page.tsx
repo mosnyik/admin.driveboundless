@@ -25,7 +25,10 @@ export default async function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <NotificationSettingsForm initialRecipients={settings.alertRecipients} />
+          <NotificationSettingsForm
+            initialRecipients={settings.alertRecipients}
+            defaultRecipient={process.env.ADMIN_EMAIL ?? null}
+          />
         </CardContent>
       </Card>
     </div>

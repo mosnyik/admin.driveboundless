@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { isValidSignature, SIGNATURE_HEADER_NAME } from "@sanity/webhook"
 import { getApplicationById } from "@/lib/applications"
-import { getNotificationSettings } from "@/lib/settings"
+import { getAlertRecipients } from "@/lib/settings"
 import { sendEmail } from "@/lib/email"
 import { newApplicationAlertEmail } from "@/lib/email-templates"
 
@@ -43,9 +43,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, skipped: "not_found" })
   }
 
-  const settings = await getNotificationSettings()
+  const recipients = await getAlertRecipients()
 
-  if (settings.alertRecipients.length === 0) {
+  if (recipients.length === 0) {
     return NextResponse.json({ ok: true, skipped: "no_recipients" })
   }
 
@@ -61,10 +61,11 @@ export async function POST(request: Request) {
 
   try {
     await sendEmail({
-      to: settings.alertRecipients,
+      to: recipients,
       subject: email.subject,
       html: email.html,
       text: email.text,
+      fromName: "New Rental Alert",
     })
   } catch (error) {
     console.error("Failed to send new-application alert email", error)

@@ -11,7 +11,13 @@ import { updateAlertRecipients } from "@/lib/actions/settings"
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export function NotificationSettingsForm({ initialRecipients }: { initialRecipients: string[] }) {
+export function NotificationSettingsForm({
+  initialRecipients,
+  defaultRecipient,
+}: {
+  initialRecipients: string[]
+  defaultRecipient: string | null
+}) {
   const [recipients, setRecipients] = useState(initialRecipients)
   const [draft, setDraft] = useState("")
   const [pending, startTransition] = useTransition()
@@ -78,6 +84,13 @@ export function NotificationSettingsForm({ initialRecipients }: { initialRecipie
           </Badge>
         ))}
       </div>
+
+      {recipients.length === 0 && defaultRecipient && (
+        <p className="text-xs text-muted-foreground">
+          No recipients configured — alerts currently go to <strong>{defaultRecipient}</strong> by
+          default.
+        </p>
+      )}
 
       <div className="flex gap-2">
         <Input
