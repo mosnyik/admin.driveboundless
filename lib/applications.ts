@@ -78,6 +78,11 @@ const detailQuery = `*[_type == "rentalApplication" && _id == $id][0]{
     "pdfUrl": pdf.asset->url,
     renderedHtml,
     plainText
+  },
+  "currentAgreement": currentAgreement{
+    "pdfUrl": pdf.asset->url,
+    vehicleLabel,
+    generatedAt
   }
 }`
 

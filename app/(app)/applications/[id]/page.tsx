@@ -48,7 +48,9 @@ export default async function ApplicationDetailPage({
     notFound()
   }
 
-  const { renter, license, insurance, rental, selectedVehicle, additionalDrivers, agreement } = application
+  const { renter, license, insurance, rental, selectedVehicle, additionalDrivers, agreement, currentAgreement } =
+    application
+  const hasCurrentAgreement = Boolean(currentAgreement?.pdfUrl)
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10 sm:px-10">
@@ -228,6 +230,69 @@ export default async function ApplicationDetailPage({
           </CardContent>
         </Card>
 
+        {hasCurrentAgreement && currentAgreement && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif text-lg">Current agreement</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-foreground">
+                Updated for {currentAgreement.vehicleLabel} ·{" "}
+                <span suppressHydrationWarning>
+                  generated {formatDate(currentAgreement.generatedAt, "MMMM d, yyyy 'at' h:mm a")}
+                </span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                This reflects the vehicle currently on the booking. The original signed agreement is
+                preserved unchanged below.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                {currentAgreement.pdfUrl && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-auto w-full justify-start px-4 py-2.5 text-left whitespace-normal sm:w-auto"
+                    asChild
+                  >
+                    <a href={currentAgreement.pdfUrl} target="_blank" rel="noreferrer">
+                      <Download className="size-4 shrink-0" />
+                      Download current agreement (PDF)
+                    </a>
+                  </Button>
+                )}
+                <SendAgreementButton applicationId={application.id} />
+              </div>
+
+              {application.agreementEmailHistory.length > 0 && (
+                <div className="border-t pt-4">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Sent to customer
+                  </p>
+                  <ul className="space-y-1.5">
+                    {application.agreementEmailHistory.map((entry, index) => (
+                      <li
+                        key={index}
+                        className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground"
+                      >
+                        <span>
+                          {entry.sentTo} by {entry.sentBy}
+                        </span>
+                        <span
+                          className="text-xs"
+                          title={formatDate(entry.sentAt, "MMMM d, yyyy 'at' h:mm a")}
+                          suppressHydrationWarning
+                        >
+                          {formatDistanceToNowStrict(new Date(entry.sentAt), { addSuffix: true })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {application.vehicleChangeHistory.length > 0 && (
           <Card>
             <CardHeader>
@@ -301,7 +366,9 @@ export default async function ApplicationDetailPage({
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-serif text-lg">Signed agreement</CardTitle>
+            <CardTitle className="font-serif text-lg">
+              {hasCurrentAgreement ? "Original signed agreement" : "Signed agreement"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-2 text-sm">
@@ -333,14 +400,14 @@ export default async function ApplicationDetailPage({
                 >
                   <a href={agreement.pdfUrl} target="_blank" rel="noreferrer">
                     <Download className="size-4 shrink-0" />
-                    Download signed agreement (PDF)
+                    Download original agreement (PDF)
                   </a>
                 </Button>
-                <SendAgreementButton applicationId={application.id} />
+                {!hasCurrentAgreement && <SendAgreementButton applicationId={application.id} />}
               </div>
             )}
 
-            {application.agreementEmailHistory.length > 0 && (
+            {!hasCurrentAgreement && application.agreementEmailHistory.length > 0 && (
               <div className="border-t pt-4">
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Sent to customer

@@ -9,13 +9,15 @@ import { agreementEmail } from "@/lib/email-templates"
 interface ApplicationForEmail {
   renter: { fullName: string; email: string } | null
   selectedVehicle: { label: string } | null
-  agreement: { pdfUrl: string | null } | null
+  /** The most recent vehicle change's agreement, or the original if there's
+   * been no vehicle change — whichever is currently "the" agreement to send. */
+  activeAgreementPdfUrl: string | null
 }
 
 const applicationQuery = `*[_id == $id][0]{
   renter,
   "selectedVehicle": selectedVehicle{label},
-  "agreement": {"pdfUrl": agreement.pdf.asset->url}
+  "activeAgreementPdfUrl": coalesce(currentAgreement.pdf.asset->url, agreement.pdf.asset->url)
 }`
 
 export async function sendAgreementToCustomer(applicationId: string) {
@@ -37,7 +39,7 @@ export async function sendAgreementToCustomer(applicationId: string) {
     throw new Error("This application doesn't have an email address on file.")
   }
 
-  const pdfUrl = application.agreement?.pdfUrl
+  const pdfUrl = application.activeAgreementPdfUrl
 
   if (!pdfUrl) {
     throw new Error("There's no agreement on file to send yet.")

@@ -27,7 +27,10 @@ interface CurrentApplicationState {
   } | null
   additionalDrivers: Array<{ name: string; licenseNumber: string; licenseState: string }> | null
   selectedVehicleLabel: string | null
-  currentAgreementPdf: { _type: "file"; asset: { _type: "reference"; _ref: string } } | null
+  /** Whatever agreement PDF is currently "active" — the most recent vehicle
+   * change's agreement if one exists, otherwise the original frozen one. This
+   * is what gets retained as "previous" when this change generates a new one. */
+  activeAgreementPdf: { _type: "file"; asset: { _type: "reference"; _ref: string } } | null
 }
 
 const currentStateQuery = `*[_id == $id][0]{
@@ -37,7 +40,7 @@ const currentStateQuery = `*[_id == $id][0]{
   rental,
   additionalDrivers,
   "selectedVehicleLabel": selectedVehicle.label,
-  "currentAgreementPdf": agreement.pdf
+  "activeAgreementPdf": coalesce(currentAgreement.pdf, agreement.pdf)
 }`
 
 interface NewVehicle {
@@ -155,7 +158,7 @@ export async function changeApplicationVehicle(applicationId: string, newVehicle
               reason: trimmedReason,
               previousVehicleLabel: current.selectedVehicleLabel ?? null,
               newVehicleLabel,
-              previousAgreementPdf: current.currentAgreementPdf ?? undefined,
+              previousAgreementPdf: current.activeAgreementPdf ?? undefined,
             },
           ],
         },
@@ -169,12 +172,12 @@ export async function changeApplicationVehicle(applicationId: string, newVehicle
             selectedRate: "week",
             selectedRatePrice: vehicle.pricePerWeek,
           },
-          agreement: {
-            accepted: true,
-            acceptedAt: now,
-            renterSignature: agreement.renterSignature,
-            ownerSignature: agreement.ownerSignature,
-            ownerSignedDate: agreement.signedDate,
+          // The original `agreement` (real customer signature + real accepted
+          // date) is never touched. Each vehicle change instead produces its
+          // own new agreement here, reflecting the vehicle at the time.
+          currentAgreement: {
+            vehicleLabel: newVehicleLabel,
+            generatedAt: now,
             renderedHtml: agreement.renderedHtml,
             plainText: agreement.plainText,
             pdf: { _type: "file", asset: { _type: "reference", _ref: pdfAssetId } },
