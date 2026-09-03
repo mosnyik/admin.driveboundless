@@ -1,8 +1,16 @@
 import Link from "next/link"
 import { getSession } from "@/lib/auth"
-import { sanityFetch } from "@/lib/sanity"
+import { getDashboardAnalytics } from "@/lib/analytics"
+import { getVehicleOptions } from "@/lib/vehicles"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, Car, CircleCheck, CircleAlert } from "lucide-react"
+import {
+  AlertCircle,
+  ArrowLeftRight,
+  CheckCircle2,
+  MessagesSquare,
+  Trophy,
+  XCircle,
+} from "lucide-react"
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -11,23 +19,78 @@ function getGreeting() {
   return "Good evening"
 }
 
-async function getCounts() {
-  try {
-    const [applications, needsAttention, vehicles] = await Promise.all([
-      sanityFetch<number>(`count(*[_type == "rentalApplication"])`),
-      sanityFetch<number>(`count(*[_type == "rentalApplication" && status == "new"])`),
-      sanityFetch<number>(`count(*[_type == "vehicle"])`),
-    ])
+function StatusTile({
+  icon: Icon,
+  label,
+  value,
+  colorClassName,
+}: {
+  icon: typeof AlertCircle
+  label: string
+  value: number
+  colorClassName: string
+}) {
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-3 py-4">
+        <Icon className={`size-5 shrink-0 ${colorClassName}`} />
+        <div>
+          <p className={`font-serif text-2xl font-semibold ${colorClassName}`}>{value}</p>
+          <p className="text-xs text-muted-foreground">{label}</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
-    return { applications, needsAttention, vehicles, connected: true as const }
-  } catch {
-    return { applications: null, needsAttention: null, vehicles: null, connected: false as const }
+/** Ranked bar-list: label + value on top, a proportional bar underneath — sized
+ * relative to the top item, so relative magnitude reads at a glance. */
+function VehicleBarList({
+  items,
+  emptyMessage,
+  countLabel,
+  barColorClassName,
+}: {
+  items: { label: string; count: number }[]
+  emptyMessage: string
+  countLabel: (count: number) => string
+  barColorClassName: string
+}) {
+  if (items.length === 0) {
+    return <p className="text-sm text-muted-foreground">{emptyMessage}</p>
   }
+
+  const max = Math.max(...items.map((item) => item.count))
+
+  return (
+    <ul className="space-y-4">
+      {items.map((item, index) => (
+        <li key={item.label}>
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+              {index + 1}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-sm text-foreground">{item.label}</span>
+            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+              {countLabel(item.count)}
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className={`h-full rounded-full ${barColorClassName}`}
+              style={{ width: `${max > 0 ? (item.count / max) * 100 : 0}%` }}
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 export default async function DashboardPage() {
   const session = await getSession()
-  const { applications, needsAttention, vehicles, connected } = await getCounts()
+  const [analytics, vehicles] = await Promise.all([getDashboardAnalytics(), getVehicleOptions()])
+  const { statusCounts, totalApplications, topPerformingVehicles, mostChangedVehicles } = analytics
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10 sm:px-10">
@@ -37,63 +100,80 @@ export default async function DashboardPage() {
           {session?.email ? `, ${session.email.split("@")[0]}` : ""}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Here&apos;s the current state of your Drive Boundless data.
+          {totalApplications} application{totalApplications === 1 ? "" : "s"} on record ·{" "}
+          {vehicles.length} vehicle{vehicles.length === 1 ? "" : "s"} in the fleet
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Link href="/applications">
-          <Card className="transition-colors hover:border-accent/40">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Rental applications
-              </CardTitle>
-              <FileText className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="font-serif text-3xl font-semibold text-foreground">
-                {applications ?? "—"}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {needsAttention ? `${needsAttention} need attention` : "Total on record"}
-              </p>
-            </CardContent>
-          </Card>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-serif text-lg font-semibold text-foreground">Applications</h2>
+        <Link href="/applications" className="text-sm text-accent transition-colors hover:underline">
+          View all
         </Link>
+      </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Fleet</CardTitle>
-            <Car className="size-4 text-muted-foreground" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatusTile
+          icon={AlertCircle}
+          label="Needs attention"
+          value={statusCounts.new}
+          colorClassName="text-amber-700 dark:text-amber-400"
+        />
+        <StatusTile
+          icon={MessagesSquare}
+          label="In progress"
+          value={statusCounts.contacted}
+          colorClassName="text-accent"
+        />
+        <StatusTile
+          icon={CheckCircle2}
+          label="Approved"
+          value={statusCounts.approved}
+          colorClassName="text-success"
+        />
+        <StatusTile
+          icon={XCircle}
+          label="Declined"
+          value={statusCounts.declined}
+          colorClassName="text-destructive dark:text-destructive-foreground"
+        />
+      </div>
+
+      <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-2">
+        <Card className="min-w-0">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-serif text-lg">
+              <Trophy className="size-4 text-muted-foreground" />
+              Best performing vehicles
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="font-serif text-3xl font-semibold text-foreground">
-              {vehicles ?? "—"}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">Vehicles in the catalog</p>
+          <CardContent className="min-w-0">
+            <VehicleBarList
+              items={topPerformingVehicles}
+              emptyMessage="No approved rentals yet."
+              countLabel={(count) => `${count} approved`}
+              barColorClassName="bg-accent"
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-0">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-serif text-lg">
+              <ArrowLeftRight className="size-4 text-muted-foreground" />
+              Most frequently changed
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="min-w-0">
+            <VehicleBarList
+              items={mostChangedVehicles}
+              emptyMessage="No vehicle changes recorded yet."
+              countLabel={(count) => `${count} time${count === 1 ? "" : "s"} swapped out`}
+              barColorClassName="bg-amber-500"
+            />
           </CardContent>
         </Card>
       </div>
-
-      <Card className="mt-4">
-        <CardContent className="flex items-center gap-3 py-4">
-          {connected ? (
-            <>
-              <CircleCheck className="size-4 text-success" />
-              <p className="text-sm text-foreground">
-                Connected to the Drive Boundless Sanity dataset.
-              </p>
-            </>
-          ) : (
-            <>
-              <CircleAlert className="size-4 text-destructive" />
-              <p className="text-sm text-foreground">
-                Could not reach the Sanity dataset. Check your environment variables.
-              </p>
-            </>
-          )}
-        </CardContent>
-      </Card>
     </div>
   )
 }
