@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/select"
 import { createVehicle, updateVehicle } from "@/lib/actions/vehicles"
 import { FUEL_TYPES, type VehicleFormValues } from "@/lib/vehicle-types"
+import type { Company } from "@/lib/company-types"
+
+const UNASSIGNED = "unassigned"
 
 const DEFAULT_VALUES: VehicleFormValues = {
   make: "",
@@ -34,6 +37,7 @@ const DEFAULT_VALUES: VehicleFormValues = {
   fuelType: "Regular",
   seats: 5,
   available: true,
+  companyId: null,
 }
 
 export function VehicleForm({
@@ -41,11 +45,13 @@ export function VehicleForm({
   vehicleId,
   initialValues,
   initialImageUrl,
+  companies,
 }: {
   mode: "create" | "edit"
   vehicleId?: string
   initialValues?: VehicleFormValues
   initialImageUrl?: string | null
+  companies: Company[]
 }) {
   const router = useRouter()
   const [values, setValues] = useState<VehicleFormValues>(initialValues ?? DEFAULT_VALUES)
@@ -122,7 +128,9 @@ export function VehicleForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="make">Make</Label>
+          <Label htmlFor="make">
+            Make <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="make"
             value={values.make}
@@ -132,7 +140,9 @@ export function VehicleForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="model">Model</Label>
+          <Label htmlFor="model">
+            Model <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="model"
             value={values.model}
@@ -142,7 +152,9 @@ export function VehicleForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="year">Year</Label>
+          <Label htmlFor="year">
+            Year <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="year"
             type="number"
@@ -152,7 +164,9 @@ export function VehicleForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="color">Color</Label>
+          <Label htmlFor="color">
+            Color <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="color"
             value={values.color}
@@ -162,7 +176,9 @@ export function VehicleForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="miles">Mileage</Label>
+          <Label htmlFor="miles">
+            Mileage <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="miles"
             type="number"
@@ -172,7 +188,9 @@ export function VehicleForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="seats">Seats</Label>
+          <Label htmlFor="seats">
+            Seats <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="seats"
             type="number"
@@ -185,7 +203,9 @@ export function VehicleForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="pricePerDay">Price per day ($)</Label>
+          <Label htmlFor="pricePerDay">
+            Price per day ($) <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="pricePerDay"
             type="number"
@@ -211,7 +231,9 @@ export function VehicleForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="minRentalDays">Minimum rental days</Label>
+          <Label htmlFor="minRentalDays">
+            Minimum rental days <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="minRentalDays"
             type="number"
@@ -222,7 +244,9 @@ export function VehicleForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="deliveryFee">Delivery fee ($)</Label>
+          <Label htmlFor="deliveryFee">
+            Delivery fee ($) <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="deliveryFee"
             type="number"
@@ -236,7 +260,9 @@ export function VehicleForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="pickupTimes">Pickup times</Label>
+          <Label htmlFor="pickupTimes">
+            Pickup times <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="pickupTimes"
             value={values.pickupTimes}
@@ -260,6 +286,26 @@ export function VehicleForm({
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="company">Owner company</Label>
+        <Select
+          value={values.companyId ?? UNASSIGNED}
+          onValueChange={(value) => update("companyId", value === UNASSIGNED ? null : value)}
+        >
+          <SelectTrigger id="company" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+            {companies.map((company) => (
+              <SelectItem key={company.id} value={company.id}>
+                {company.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex items-center justify-between rounded-md border p-3">

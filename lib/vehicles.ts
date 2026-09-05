@@ -43,7 +43,9 @@ const adminVehiclesQuery = `*[_type == "vehicle"] | ${ORDER_CLAUSE} {
   "imageUrl": image.asset->url,
   "imageAlt": coalesce(image.alt, ""),
   "available": coalesce(available, true),
-  "sortOrder": coalesce(sortOrder, 0)
+  "sortOrder": coalesce(sortOrder, 0),
+  "companyId": company->_id,
+  "companyName": company->name
 }`
 
 export async function getAdminVehicles() {
@@ -68,7 +70,9 @@ const adminVehicleByIdQuery = `*[_type == "vehicle" && _id == $id][0]{
   "imageUrl": image.asset->url,
   "imageAlt": coalesce(image.alt, ""),
   "available": coalesce(available, true),
-  "sortOrder": coalesce(sortOrder, 0)
+  "sortOrder": coalesce(sortOrder, 0),
+  "companyId": company->_id,
+  "companyName": company->name
 }`
 
 export async function getAdminVehicleById(id: string) {

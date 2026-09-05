@@ -3,6 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { getAdminVehicleById } from "@/lib/vehicles"
+import { getActiveCompanies } from "@/lib/companies"
 import { VehicleForm } from "@/components/admin/vehicle-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -16,7 +17,7 @@ export default async function EditVehiclePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const vehicle = await getAdminVehicleById(id)
+  const [vehicle, companies] = await Promise.all([getAdminVehicleById(id), getActiveCompanies()])
 
   if (!vehicle) {
     notFound()
@@ -45,6 +46,7 @@ export default async function EditVehiclePage({
             mode="edit"
             vehicleId={vehicle.id}
             initialImageUrl={vehicle.imageUrl}
+            companies={companies}
             initialValues={{
               make: vehicle.make,
               model: vehicle.model,
@@ -59,6 +61,7 @@ export default async function EditVehiclePage({
               fuelType: vehicle.fuelType,
               seats: vehicle.seats,
               available: vehicle.available,
+              companyId: vehicle.companyId,
             }}
           />
         </CardContent>

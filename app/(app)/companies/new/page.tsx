@@ -1,35 +1,32 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import { getActiveCompanies } from "@/lib/companies"
-import { VehicleForm } from "@/components/admin/vehicle-form"
+import { CompanyForm } from "@/components/admin/company-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export const metadata: Metadata = {
-  title: "Add vehicle",
+  title: "Add company",
 }
 
-export default async function NewVehiclePage() {
-  const companies = await getActiveCompanies()
-
+export default function NewCompanyPage() {
   return (
     <div className="mx-auto max-w-2xl px-6 py-10 sm:px-10">
       <Link
-        href="/fleet"
+        href="/companies"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
-        Back to fleet
+        Back to companies
       </Link>
 
-      <h1 className="mt-4 mb-8 font-serif text-3xl font-semibold text-foreground">Add vehicle</h1>
+      <h1 className="mt-4 mb-8 font-serif text-3xl font-semibold text-foreground">Add company</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-serif text-lg">Vehicle details</CardTitle>
+          <CardTitle className="font-serif text-lg">Company details</CardTitle>
         </CardHeader>
         <CardContent>
-          <VehicleForm mode="create" companies={companies} />
+          <CompanyForm mode="create" />
         </CardContent>
       </Card>
     </div>

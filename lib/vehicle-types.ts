@@ -31,6 +31,8 @@ export interface AdminVehicle {
   imageAlt: string
   available: boolean
   sortOrder: number
+  companyId: string | null
+  companyName: string | null
 }
 
 export interface VehicleFormValues {
@@ -47,4 +49,5 @@ export interface VehicleFormValues {
   fuelType: FuelType
   seats: number
   available: boolean
+  companyId: string | null
 }

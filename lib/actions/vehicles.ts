@@ -47,6 +47,10 @@ function buildFields(values: VehicleFormValues) {
   }
 }
 
+function companyReference(companyId: string | null) {
+  return companyId ? { _type: "reference" as const, _ref: companyId } : undefined
+}
+
 async function uploadImageIfProvided(imageFile: File | null) {
   if (!imageFile || imageFile.size === 0) return undefined
 
@@ -74,6 +78,7 @@ export async function createVehicle(values: VehicleFormValues, imageFile: File |
     image: imageAssetId
       ? { _type: "image", asset: { _type: "reference", _ref: imageAssetId } }
       : undefined,
+    company: companyReference(values.companyId),
   }
 
   const result = (await sanityMutate([{ create: document }])) as { results?: Array<{ id?: string }> }
@@ -92,6 +97,8 @@ export async function updateVehicle(id: string, values: VehicleFormValues, image
 
   const imageAssetId = await uploadImageIfProvided(imageFile)
 
+  const companyRef = companyReference(values.companyId)
+
   await sanityMutate([
     {
       patch: {
@@ -101,7 +108,9 @@ export async function updateVehicle(id: string, values: VehicleFormValues, image
           ...(imageAssetId
             ? { image: { _type: "image", asset: { _type: "reference", _ref: imageAssetId } } }
             : {}),
+          ...(companyRef ? { company: companyRef } : {}),
         },
+        ...(companyRef ? {} : { unset: ["company"] }),
       },
     },
   ])

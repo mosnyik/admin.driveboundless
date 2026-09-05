@@ -11,7 +11,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_PASSWORD_LENGTH = 8
 const BCRYPT_COST = 12
 
-async function requireAdmin() {
+export async function requireAdmin() {
   const session = await getSession()
   if (!session) throw new Error("You must be signed in to do that.")
   if (session.role !== "admin") throw new Error("Only an administrator can do that.")

@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
-import { Car, FileText, LayoutDashboard, LogOut, Menu, Moon, Settings, Sun } from "lucide-react"
+import { Building2, Car, FileText, LayoutDashboard, LogOut, Menu, Moon, Settings, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import {
@@ -21,6 +21,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/applications", label: "Applications", icon: FileText },
   { href: "/fleet", label: "Fleet", icon: Car },
+  { href: "/companies", label: "Companies", icon: Building2 },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 
