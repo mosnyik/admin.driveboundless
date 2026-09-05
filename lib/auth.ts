@@ -18,13 +18,25 @@ function getSecretKey() {
   return new TextEncoder().encode(secret)
 }
 
+export type AppUserRole = "admin" | "owner"
+
 export interface AdminSession {
+  userId: string
   email: string
+  role: AppUserRole
   issuedAt: number
 }
 
-export async function createSessionToken(email: string) {
-  return new SignJWT({ email })
+export async function createSessionToken({
+  userId,
+  email,
+  role,
+}: {
+  userId: string
+  email: string
+  role: AppUserRole
+}) {
+  return new SignJWT({ userId, email, role })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
@@ -35,11 +47,20 @@ export async function verifySessionToken(token: string): Promise<AdminSession | 
   try {
     const { payload } = await jwtVerify(token, getSecretKey())
 
-    if (typeof payload.email !== "string") {
+    if (
+      typeof payload.email !== "string" ||
+      typeof payload.userId !== "string" ||
+      (payload.role !== "admin" && payload.role !== "owner")
+    ) {
       return null
     }
 
-    return { email: payload.email, issuedAt: (payload.iat ?? 0) * 1000 }
+    return {
+      userId: payload.userId,
+      email: payload.email,
+      role: payload.role,
+      issuedAt: (payload.iat ?? 0) * 1000,
+    }
   } catch {
     return null
   }

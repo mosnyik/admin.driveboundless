@@ -12,10 +12,13 @@ store. No separate database — Sanity *is* the database.
 ## What it does
 
 ### Authentication
-Single-admin login (email + password) gated behind a signed session cookie.
-No public sign-up, no user table — just one account, checked by a bcrypt hash
-in the environment. Every route outside `/login` is protected by middleware
-(`proxy.ts` in Next.js 16).
+Email + password login gated behind a signed session cookie. Accounts (role
+`admin` or `owner`) are `appUser` documents in Sanity — no public sign-up;
+accounts are created from Settings > Team by an existing admin, with a
+password they can change from Settings themselves afterward. Every route
+outside `/login` is protected by middleware (`proxy.ts` in Next.js 16) and,
+for the active/deactivated check, a second server-side check in
+`app/(app)/layout.tsx`.
 
 ### Applications dashboard
 Lists every rental application submitted through the public site, with
@@ -97,8 +100,9 @@ proxy.ts            Auth middleware (Next.js 16's renamed middleware.ts)
 
 ```bash
 pnpm install
-cp .env.local.example .env.local   # fill in the values described below
-pnpm hash-password "your password" # generates ADMIN_PASSWORD_HASH
+cp .example.env .env.local          # fill in the values described below
+pnpm hash-password "your password"  # generates ADMIN_PASSWORD_HASH
+pnpm seed-admin-user                # creates the first appUser from ADMIN_EMAIL/ADMIN_PASSWORD_HASH
 pnpm dev
 ```
 
@@ -106,11 +110,12 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Environment variables
 
-See `.env.local.example` for the full list with inline explanations. In
+See `.example.env` for the full list with inline explanations. In
 short, you'll need:
 
 - Sanity project ID, dataset name, and a write-enabled API token
-- An admin email + bcrypt password hash for login
+- An admin email + bcrypt password hash, used once by `pnpm seed-admin-user`
+  to create the first account — not read at login time after that
 - A random session-signing secret
 - A Resend API key (and optionally a verified sender domain) for email
 - A shared secret for the Sanity webhook that triggers new-application alerts
@@ -128,6 +133,7 @@ settings.
 | `pnpm start` | Run a production build |
 | `pnpm lint` | Lint the codebase |
 | `pnpm hash-password "<password>"` | Generate a bcrypt hash for `ADMIN_PASSWORD_HASH` |
+| `pnpm seed-admin-user` | One-time: create the first `appUser` from `ADMIN_EMAIL`/`ADMIN_PASSWORD_HASH` |
 
 ## Deployment
 

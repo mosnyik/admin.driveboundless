@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
-import { getSession } from "@/lib/auth"
+import { getSession, clearSessionCookie } from "@/lib/auth"
+import { getUserById } from "@/lib/users"
 import { AdminSidebar } from "@/components/admin/sidebar"
 
 export default async function AppLayout({
@@ -10,6 +11,15 @@ export default async function AppLayout({
   const session = await getSession()
 
   if (!session) {
+    redirect("/login")
+  }
+
+  // Re-checked on every navigation (not just at login) so a deactivated
+  // account loses access immediately instead of waiting out the JWT's 7-day life.
+  const user = await getUserById(session.userId)
+
+  if (!user || !user.active) {
+    await clearSessionCookie()
     redirect("/login")
   }
 

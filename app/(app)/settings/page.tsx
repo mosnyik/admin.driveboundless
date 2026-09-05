@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
+import { getSession } from "@/lib/auth"
 import { getNotificationSettings } from "@/lib/settings"
+import { getAllUsers, getUserById } from "@/lib/users"
+import { AccountSettingsForm } from "@/components/admin/account-settings-form"
 import { NotificationSettingsForm } from "@/components/admin/notification-settings-form"
 import { ThemeSettings } from "@/components/admin/theme-settings"
+import { UserManagement } from "@/components/admin/user-management"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export const metadata: Metadata = {
@@ -9,7 +13,12 @@ export const metadata: Metadata = {
 }
 
 export default async function SettingsPage() {
-  const settings = await getNotificationSettings()
+  const session = await getSession()
+  const [settings, currentUser] = await Promise.all([
+    getNotificationSettings(),
+    session ? getUserById(session.userId) : null,
+  ])
+  const users = session?.role === "admin" ? await getAllUsers() : null
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10 sm:px-10">
@@ -30,6 +39,31 @@ export default async function SettingsPage() {
             <ThemeSettings />
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-lg">Your account</CardTitle>
+            <CardDescription>Change the password you sign in with.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AccountSettingsForm mustChangePassword={currentUser?.mustChangePassword ?? false} />
+          </CardContent>
+        </Card>
+
+        {users && session && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif text-lg">Team</CardTitle>
+              <CardDescription>
+                People who can sign in to this dashboard. Set a password for them here — they&apos;ll
+                choose their own on first login.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UserManagement users={users} currentUserId={session.userId} />
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

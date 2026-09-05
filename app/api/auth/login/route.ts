@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { createSessionToken, setSessionCookie } from "@/lib/auth"
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH
+import { getUserByEmail } from "@/lib/users"
 
 const MAX_ATTEMPTS = 5
 const LOCKOUT_MS = 15 * 60 * 1000
@@ -36,11 +34,6 @@ function clearFailures(key: string) {
 }
 
 export async function POST(request: Request) {
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD_HASH) {
-    console.error("ADMIN_EMAIL or ADMIN_PASSWORD_HASH is not configured.")
-    return NextResponse.json({ error: "Admin login is not configured yet." }, { status: 500 })
-  }
-
   const clientKey = getClientKey(request)
 
   if (isLockedOut(clientKey)) {
@@ -65,18 +58,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Email and password are required." }, { status: 400 })
   }
 
-  const emailMatches = email === ADMIN_EMAIL.trim().toLowerCase()
-  const passwordMatches = await bcrypt.compare(password, ADMIN_PASSWORD_HASH)
+  const user = await getUserByEmail(email)
+  const passwordMatches = user ? await bcrypt.compare(password, user.passwordHash) : false
 
-  if (!emailMatches || !passwordMatches) {
+  if (!user || !user.active || !passwordMatches) {
     recordFailure(clientKey)
     return NextResponse.json({ error: "Invalid email or password." }, { status: 401 })
   }
 
   clearFailures(clientKey)
 
-  const token = await createSessionToken(email)
+  const token = await createSessionToken({ userId: user.id, email: user.email, role: user.role })
   await setSessionCookie(token)
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, mustChangePassword: user.mustChangePassword })
 }
