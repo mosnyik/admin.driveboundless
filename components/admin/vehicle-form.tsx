@@ -29,8 +29,8 @@ const DEFAULT_VALUES: VehicleFormValues = {
   year: new Date().getFullYear(),
   miles: 0,
   color: "",
-  pricePerDay: 0,
-  pricePerWeek: null,
+  pricePerDay: null,
+  pricePerWeek: 0,
   minRentalDays: 1,
   deliveryFee: 0,
   pickupTimes: "9 AM - 6 PM",
@@ -203,31 +203,31 @@ export function VehicleForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="pricePerDay">
-            Price per day ($) <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="pricePerDay"
-            type="number"
-            min={0}
-            value={values.pricePerDay}
-            onChange={(event) => update("pricePerDay", Number(event.target.value))}
-            required
-          />
-        </div>
-        <div className="space-y-2">
           <Label htmlFor="pricePerWeek">
-            Price per week ($) <span className="text-muted-foreground">— optional</span>
+            Price per week ($) <span className="text-destructive">*</span>
           </Label>
           <Input
             id="pricePerWeek"
             type="number"
             min={0}
-            value={values.pricePerWeek ?? ""}
+            value={values.pricePerWeek}
+            onChange={(event) => update("pricePerWeek", Number(event.target.value))}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="pricePerDay">
+            Price per day ($) <span className="text-muted-foreground">— optional</span>
+          </Label>
+          <Input
+            id="pricePerDay"
+            type="number"
+            min={0}
+            value={values.pricePerDay ?? ""}
             onChange={(event) =>
-              update("pricePerWeek", event.target.value === "" ? null : Number(event.target.value))
+              update("pricePerDay", event.target.value === "" ? null : Number(event.target.value))
             }
-            placeholder="Falls back to daily × 7 × 90%"
+            placeholder="Falls back to weekly ÷ 7 ÷ 90%"
           />
         </div>
         <div className="space-y-2">

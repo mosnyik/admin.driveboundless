@@ -88,13 +88,13 @@ export function CompanyForm({
 
       <div className="space-y-2">
         <Label htmlFor="address">
-          Address <span className="text-destructive">*</span>
+          Address <span className="text-muted-foreground">— optional</span>
         </Label>
         <Input
           id="address"
           value={values.address}
           onChange={(event) => update("address", event.target.value)}
-          required
+          placeholder="Falls back to “To be communicated via text or email”"
         />
       </div>
 

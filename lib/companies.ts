@@ -9,7 +9,7 @@ const companyFields = `
   "id": _id,
   name,
   "dbaName": coalesce(dbaName, ""),
-  address,
+  "address": coalesce(address, ""),
   phone,
   email,
   "notificationEmail": coalesce(notificationEmail, email),

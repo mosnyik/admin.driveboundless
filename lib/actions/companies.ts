@@ -9,7 +9,6 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function validateValues(values: CompanyFormValues) {
   if (!values.name.trim()) throw new Error("Legal name is required.")
-  if (!values.address.trim()) throw new Error("Address is required.")
   if (!values.phone.trim()) throw new Error("Phone is required.")
   if (!EMAIL_PATTERN.test(values.email.trim())) {
     throw new Error(`"${values.email}" doesn't look like a valid email address.`)
@@ -23,7 +22,7 @@ function buildFields(values: CompanyFormValues) {
   return {
     name: values.name.trim(),
     dbaName: values.dbaName.trim() || undefined,
-    address: values.address.trim(),
+    address: values.address.trim() || undefined,
     phone: values.phone.trim(),
     email: values.email.trim().toLowerCase(),
     notificationEmail: values.notificationEmail.trim().toLowerCase() || undefined,
@@ -60,6 +59,7 @@ export async function updateCompany(id: string, values: CompanyFormValues) {
         set: { ...buildFields(values), updatedAt: new Date().toISOString() },
         unset: [
           ...(values.dbaName.trim() ? [] : ["dbaName"]),
+          ...(values.address.trim() ? [] : ["address"]),
           ...(values.notificationEmail.trim() ? [] : ["notificationEmail"]),
         ],
       },

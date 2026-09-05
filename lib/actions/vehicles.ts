@@ -12,11 +12,11 @@ function validateValues(values: VehicleFormValues) {
   if (!Number.isFinite(values.year) || values.year < 1900) throw new Error("Enter a valid year.")
   if (!Number.isFinite(values.miles) || values.miles < 0) throw new Error("Enter a valid mileage.")
   if (!values.color.trim()) throw new Error("Color is required.")
-  if (!Number.isFinite(values.pricePerDay) || values.pricePerDay < 0) {
-    throw new Error("Enter a valid price per day.")
-  }
-  if (values.pricePerWeek !== null && (!Number.isFinite(values.pricePerWeek) || values.pricePerWeek < 0)) {
+  if (!Number.isFinite(values.pricePerWeek) || values.pricePerWeek < 0) {
     throw new Error("Enter a valid price per week.")
+  }
+  if (values.pricePerDay !== null && (!Number.isFinite(values.pricePerDay) || values.pricePerDay < 0)) {
+    throw new Error("Enter a valid price per day.")
   }
   if (!Number.isFinite(values.minRentalDays) || values.minRentalDays < 1) {
     throw new Error("Minimum rental days must be at least 1.")
@@ -36,8 +36,8 @@ function buildFields(values: VehicleFormValues) {
     year: values.year,
     miles: values.miles,
     color: values.color.trim(),
-    pricePerDay: values.pricePerDay,
-    pricePerWeek: values.pricePerWeek ?? undefined,
+    pricePerDay: values.pricePerDay ?? undefined,
+    pricePerWeek: values.pricePerWeek,
     minRentalDays: values.minRentalDays,
     deliveryFee: values.deliveryFee,
     pickupTimes: values.pickupTimes.trim(),

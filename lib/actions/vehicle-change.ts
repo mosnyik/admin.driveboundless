@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache"
 import { getSession } from "@/lib/auth"
 import { sanityFetch, sanityMutate, uploadSanityFile } from "@/lib/sanity"
-import { buildRentalAgreementSnapshot, type RentalAgreementFormData } from "@/lib/rental-agreement"
+import {
+  buildRentalAgreementSnapshot,
+  type RentalAgreementCompany,
+  type RentalAgreementFormData,
+} from "@/lib/rental-agreement"
 import { createAgreementPdf } from "@/lib/agreement-pdf"
 
 interface CurrentApplicationState {
@@ -52,6 +56,7 @@ interface NewVehicle {
   pricePerDay: number
   pricePerWeek: number
   deliveryFee: number
+  company: RentalAgreementCompany | null
 }
 
 const vehicleQuery = `*[_id == $vehicleId][0]{
@@ -60,9 +65,10 @@ const vehicleQuery = `*[_id == $vehicleId][0]{
   model,
   year,
   color,
-  "pricePerDay": coalesce(pricePerDay, 0),
+  "pricePerDay": coalesce(pricePerDay, round(coalesce(pricePerWeek, 0) / 7 / 0.9)),
   "pricePerWeek": coalesce(pricePerWeek, round(coalesce(pricePerDay, 0) * 7 * 0.9)),
-  "deliveryFee": coalesce(deliveryFee, 0)
+  "deliveryFee": coalesce(deliveryFee, 0),
+  "company": company->{"legalName": name, dbaName, address, phone, email}
 }`
 
 export async function changeApplicationVehicle(applicationId: string, newVehicleId: string, reason: string) {
@@ -131,6 +137,7 @@ export async function changeApplicationVehicle(applicationId: string, newVehicle
     },
     additionalDrivers: current.additionalDrivers ?? [],
     acceptedAt: now,
+    company: vehicle.company ?? undefined,
   })
 
   const safeName = (current.renter?.fullName || "renter").trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase()

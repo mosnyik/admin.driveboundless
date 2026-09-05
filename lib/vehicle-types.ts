@@ -41,8 +41,8 @@ export interface VehicleFormValues {
   year: number
   miles: number
   color: string
-  pricePerDay: number
-  pricePerWeek: number | null
+  pricePerDay: number | null
+  pricePerWeek: number
   minRentalDays: number
   deliveryFee: number
   pickupTimes: string

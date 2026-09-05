@@ -50,6 +50,7 @@ interface BuildRentalAgreementInput {
   selectedVehicle: RentalAgreementVehicle | null
   additionalDrivers: RentalAgreementAdditionalDriver[]
   acceptedAt: string
+  company?: RentalAgreementCompany
 }
 
 export interface RentalAgreementSnapshot {
@@ -61,7 +62,21 @@ export interface RentalAgreementSnapshot {
   plainText: string
 }
 
-const ownerSignature = "Turchese Solutions LLC"
+export interface RentalAgreementCompany {
+  legalName: string
+  dbaName?: string
+  address: string
+  phone: string
+  email: string
+}
+
+const DEFAULT_COMPANY: RentalAgreementCompany = {
+  legalName: "Turchese Solutions LLC",
+  dbaName: "Boundless Auto Solutions",
+  address: "To be communicated via text or email",
+  phone: "+1 929-213-5106",
+  email: "info@turcheseconsulting.com",
+}
 
 function escapeHtml(value: string) {
   return value
@@ -123,9 +138,14 @@ export function buildRentalAgreementSnapshot({
   selectedVehicle,
   additionalDrivers,
   acceptedAt,
+  company = DEFAULT_COMPANY,
 }: BuildRentalAgreementInput): RentalAgreementSnapshot {
   const signedDate = formatAcceptedDate(acceptedAt)
   const renterSignature = formData.fullName
+  const ownerSignature = company.legalName
+  const companyAddress = company.address?.trim() || DEFAULT_COMPANY.address
+  const companyDisplayName = company.dbaName ? `${company.legalName} DBA ${company.dbaName}` : company.legalName
+  const companyMasthead = (company.dbaName ?? company.legalName).toUpperCase()
   const renterAddress = formData.address
     ? `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`
     : "_______________"
@@ -151,7 +171,7 @@ export function buildRentalAgreementSnapshot({
         `Vehicle: ${vehicleLabel(selectedVehicle)}`,
         "VIN: To be recorded at pickup",
         "License Plate: To be recorded at pickup",
-        `This Car Rental Agreement is entered into between Turchese Solutions LLC DBA Boundless Autos and ${valueOrPlaceholder(
+        `This Car Rental Agreement is entered into between ${companyDisplayName} and ${valueOrPlaceholder(
           formData.fullName,
           "Renter",
         )} and outlines the respective rights and obligations of the Parties relating to the rental of a vehicle. Renter is not Owner's agent for any purpose and may not assign, delegate, or transfer obligations under this Agreement.`,
@@ -207,7 +227,7 @@ export function buildRentalAgreementSnapshot({
         "Smoking, including e-cigarettes, is prohibited in the vehicle. If the car smells of smoke or vapor residue, the full deposit will be forfeited.",
         "Renter and any third party billed for rental charges are jointly and severally responsible for payment of all charges.",
         "If the vehicle uses automatic toll payment capability, Renter will be charged the toll fee plus an administrative fee.",
-        "Turchese Solutions LLC DBA Boundless Autos may rescind the Rental Agreement in the event of a manifest pricing or description error.",
+        `${companyDisplayName} may rescind the Rental Agreement in the event of a manifest pricing or description error.`,
       ],
     },
     {
@@ -219,7 +239,7 @@ export function buildRentalAgreementSnapshot({
     {
       title: "7. Changes",
       lines: [
-        "Any change to this Rental Agreement or Owner's rights must be in writing and signed by an authorized officer. Turchese Solutions LLC DBA Boundless Autos reserves the right to modify these Terms and Conditions upon written or electronic notice. Such changes apply only to future rentals after notice has been given.",
+        `Any change to this Rental Agreement or Owner's rights must be in writing and signed by an authorized officer. ${companyDisplayName} reserves the right to modify these Terms and Conditions upon written or electronic notice. Such changes apply only to future rentals after notice has been given.`,
       ],
     },
     {
@@ -241,7 +261,7 @@ export function buildRentalAgreementSnapshot({
     {
       title: "10. Repossessing the Car",
       lines: [
-        "Turchese Solutions LLC DBA Boundless Autos may repossess the vehicle at any time for reasons including failure to return vehicle when due, missed payments, illegal use, violation of Rental Agreement, or abandonment.",
+        `${companyDisplayName} may repossess the vehicle at any time for reasons including failure to return vehicle when due, missed payments, illegal use, violation of Rental Agreement, or abandonment.`,
         "Renter agrees to reimburse all repossession costs and forfeit the security deposit if repossession occurs.",
       ],
     },
@@ -275,14 +295,14 @@ export function buildRentalAgreementSnapshot({
     {
       title: "15. Property in the Car",
       lines: [
-        "Turchese Solutions LLC DBA Boundless Autos is not responsible for loss, theft, or damage to personal property left in or on the vehicle or on company premises.",
+        `${companyDisplayName} is not responsible for loss, theft, or damage to personal property left in or on the vehicle or on company premises.`,
       ],
     },
     {
       title: "16. Insurance",
       lines: [
         `Renter's Insurance: ${insurance}`,
-        "Renter must provide proof of insurance covering damage to the Rental Vehicle, personal injury, passenger injuries, and property damage. Turchese Solutions LLC DBA Boundless Autos must be added to the insurance policy and notified of any policy changes. If using company insurance, Renter is responsible for a $1,000 deductible for at-fault accidents or damages. Failure to pay deductible within 7 days may result in legal action.",
+        `Renter must provide proof of insurance covering damage to the Rental Vehicle, personal injury, passenger injuries, and property damage. ${companyDisplayName} must be added to the insurance policy and notified of any policy changes. If using company insurance, Renter is responsible for a $1,000 deductible for at-fault accidents or damages. Failure to pay deductible within 7 days may result in legal action.`,
       ],
     },
     {
@@ -312,19 +332,19 @@ export function buildRentalAgreementSnapshot({
   ]
 
   const plainText = [
-    "BOUNDLESS AUTO SOLUTIONS",
+    companyMasthead,
     "GEORGIA MOTOR VEHICLE RENTAL AGREEMENT",
-    "Operated by Turchese Solutions LLC",
-    "Email: info@turcheseconsulting.com",
-    "Phone: +1 929-213-5106",
+    `Operated by ${company.legalName}`,
+    `Email: ${company.email}`,
+    `Phone: ${company.phone}`,
     "",
     "This Motor Vehicle Rental Agreement (\"Agreement\") is entered into between:",
     "",
     "Rental Company:",
-    "Turchese Solutions LLC d/b/a Boundless Auto Solutions",
-    "Address: To be communicated via text or email",
-    "Phone: +1 929-213-5106",
-    "info@turcheseconsulting.com",
+    company.dbaName ? `${company.legalName} d/b/a ${company.dbaName}` : company.legalName,
+    `Address: ${companyAddress}`,
+    `Phone: ${company.phone}`,
+    company.email,
     "(\"Owner\" or \"Company\")",
     "",
     "Renter:",
@@ -375,20 +395,20 @@ export function buildRentalAgreementSnapshot({
 </head>
 <body>
   <header class="center">
-    <h1>BOUNDLESS AUTO SOLUTIONS</h1>
+    <h1>${escapeHtml(companyMasthead)}</h1>
     <h1>GEORGIA MOTOR VEHICLE RENTAL AGREEMENT</h1>
-    <p class="muted">Operated by Turchese Solutions LLC</p>
-    <p class="muted">Email: info@turcheseconsulting.com</p>
-    <p class="muted">Phone: +1 929-213-5106</p>
+    <p class="muted">Operated by ${escapeHtml(company.legalName)}</p>
+    <p class="muted">Email: ${escapeHtml(company.email)}</p>
+    <p class="muted">Phone: ${escapeHtml(company.phone)}</p>
     <p class="muted">This Motor Vehicle Rental Agreement (&quot;Agreement&quot;) is entered into between:</p>
   </header>
   <div class="grid">
     <section>
       <h3>Rental Company:</h3>
-      <p>Turchese Solutions LLC d/b/a Boundless Auto Solutions</p>
-      <p>Address: To be communicated via text or email</p>
-      <p>Phone: +1 929-213-5106</p>
-      <p>info@turcheseconsulting.com</p>
+      <p>${escapeHtml(company.dbaName ? `${company.legalName} d/b/a ${company.dbaName}` : company.legalName)}</p>
+      <p>Address: ${escapeHtml(companyAddress)}</p>
+      <p>Phone: ${escapeHtml(company.phone)}</p>
+      <p>${escapeHtml(company.email)}</p>
       <p class="muted">(&quot;Owner&quot; or &quot;Company&quot;)</p>
     </section>
     <section>
