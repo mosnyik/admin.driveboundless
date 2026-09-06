@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { setCompanyActive } from "@/lib/actions/companies"
+import { ViewAsButton } from "@/components/admin/view-as-button"
 import type { Company } from "@/lib/company-types"
 
 export function CompanyCard({ company }: { company: Company }) {
@@ -56,6 +57,8 @@ export function CompanyCard({ company }: { company: Company }) {
               Edit
             </Link>
           </Button>
+
+          <ViewAsButton companyId={company.id} />
 
           <div className="ml-auto flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Active</span>

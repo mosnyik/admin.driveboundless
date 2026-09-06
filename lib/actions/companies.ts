@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/actions/users"
-import { getCallerScope } from "@/lib/auth"
+import { getCallerScope, getSession, setViewAsCompanyCookie } from "@/lib/auth"
+import { getCompanyById } from "@/lib/companies"
 import { sanityMutate } from "@/lib/sanity"
 import type { CompanyFormValues, OwnCompanyFormValues } from "@/lib/company-types"
 
@@ -122,6 +123,25 @@ export async function updateOwnCompany(values: OwnCompanyFormValues) {
   ])
 
   revalidatePath("/settings")
+
+  return { ok: true as const }
+}
+
+/** Checks the real session directly (not requireAdmin, which blocks while
+ * already impersonating) so this can also be used to exit impersonation. */
+export async function setViewAsCompany(companyId: string | null) {
+  const session = await getSession()
+  if (!session || session.role !== "admin") {
+    throw new Error("Only an administrator can do that.")
+  }
+
+  if (companyId) {
+    const company = await getCompanyById(companyId)
+    if (!company) throw new Error("Company not found.")
+  }
+
+  await setViewAsCompanyCookie(companyId)
+  revalidatePath("/")
 
   return { ok: true as const }
 }

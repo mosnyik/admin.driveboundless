@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation"
-import { getSession, clearSessionCookie } from "@/lib/auth"
+import { getCallerScope, getSession, clearSessionCookie, getViewAsCompanyId } from "@/lib/auth"
 import { getUserById } from "@/lib/users"
+import { getCompanyById } from "@/lib/companies"
 import { AdminSidebar } from "@/components/admin/sidebar"
+import { ViewAsBanner } from "@/components/admin/view-as-banner"
 
 export default async function AppLayout({
   children,
@@ -23,10 +25,19 @@ export default async function AppLayout({
     redirect("/login")
   }
 
+  // The sidebar's nav should reflect the impersonated role while "viewing as"
+  // a company, even though `user` above is always the real logged-in admin.
+  const scope = await getCallerScope()
+  const viewAsCompanyId = session.role === "admin" ? await getViewAsCompanyId() : null
+  const viewAsCompany = viewAsCompanyId ? await getCompanyById(viewAsCompanyId) : null
+
   return (
     <div className="min-h-screen md:flex">
-      <AdminSidebar email={session.email} role={user.role} />
-      <main className="min-w-0 flex-1 overflow-x-hidden">{children}</main>
+      <AdminSidebar email={session.email} role={scope?.role ?? user.role} />
+      <div className="min-w-0 flex-1 overflow-x-hidden">
+        {viewAsCompany && <ViewAsBanner companyName={viewAsCompany.name} />}
+        <main>{children}</main>
+      </div>
     </div>
   )
 }

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import bcrypt from "bcryptjs"
-import { getSession } from "@/lib/auth"
+import { getSession, getViewAsCompanyId } from "@/lib/auth"
 import { sanityMutate } from "@/lib/sanity"
 import { getUserByEmail, getUserById } from "@/lib/users"
 import type { AppUserRole } from "@/lib/user-types"
@@ -11,10 +11,18 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_PASSWORD_LENGTH = 8
 const BCRYPT_COST = 12
 
+/** Also unavailable while "viewing as" a company — an impersonating admin
+ * shouldn't retain admin-only powers a real owner wouldn't have. The one
+ * exception is exiting impersonation itself (setViewAsCompany), which checks
+ * the real session directly instead of going through this. */
 export async function requireAdmin() {
   const session = await getSession()
   if (!session) throw new Error("You must be signed in to do that.")
   if (session.role !== "admin") throw new Error("Only an administrator can do that.")
+
+  const viewAsCompanyId = await getViewAsCompanyId()
+  if (viewAsCompanyId) throw new Error('Exit "View as" mode to do that.')
+
   return session
 }
 
