@@ -3,6 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { format, formatDistanceToNowStrict } from "date-fns"
 import { ArrowLeft, ArrowRight, Download, FileCheck2, FileX2 } from "lucide-react"
+import { getCallerScope } from "@/lib/auth"
 import { getApplicationById } from "@/lib/applications"
 import { getVehicleOptions } from "@/lib/vehicles"
 import { STATUS_CONFIG } from "@/components/admin/status-badge"
@@ -42,7 +43,15 @@ export default async function ApplicationDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [application, vehicles] = await Promise.all([getApplicationById(id), getVehicleOptions()])
+  const scope = await getCallerScope()
+  const isAdmin = scope?.role === "admin"
+  // A sentinel, never-matching id when an owner has no company yet, so a
+  // misconfigured account gets a 404 rather than accidentally everything.
+  const companyId = scope?.role === "owner" ? scope.companyId ?? "no-company-assigned" : undefined
+  const [application, vehicles] = await Promise.all([
+    getApplicationById(id, companyId),
+    getVehicleOptions(),
+  ])
 
   if (!application) {
     notFound()
@@ -199,11 +208,13 @@ export default async function ApplicationDetailPage({
           <CardHeader>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="font-serif text-lg">Selected vehicle</CardTitle>
-              <VehicleChangeDialog
-                applicationId={application.id}
-                currentVehicleLabel={selectedVehicle?.label ?? null}
-                vehicles={vehicles}
-              />
+              {isAdmin && (
+                <VehicleChangeDialog
+                  applicationId={application.id}
+                  currentVehicleLabel={selectedVehicle?.label ?? null}
+                  vehicles={vehicles}
+                />
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -260,7 +271,7 @@ export default async function ApplicationDetailPage({
                     </a>
                   </Button>
                 )}
-                <SendAgreementButton applicationId={application.id} />
+                {isAdmin && <SendAgreementButton applicationId={application.id} />}
               </div>
 
               {application.agreementEmailHistory.length > 0 && (
@@ -403,7 +414,7 @@ export default async function ApplicationDetailPage({
                     Download original agreement (PDF)
                   </a>
                 </Button>
-                {!hasCurrentAgreement && <SendAgreementButton applicationId={application.id} />}
+                {!hasCurrentAgreement && isAdmin && <SendAgreementButton applicationId={application.id} />}
               </div>
             )}
 

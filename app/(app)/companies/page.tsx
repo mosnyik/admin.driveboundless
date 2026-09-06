@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { notFound } from "next/navigation"
 import { Plus } from "lucide-react"
+import { getCallerScope } from "@/lib/auth"
 import { getCompanies } from "@/lib/companies"
 import { CompanyCard } from "@/components/admin/company-card"
 import { Button } from "@/components/ui/button"
@@ -10,6 +12,9 @@ export const metadata: Metadata = {
 }
 
 export default async function CompaniesPage() {
+  const scope = await getCallerScope()
+  if (scope?.role !== "admin") notFound()
+
   const companies = await getCompanies()
 
   return (

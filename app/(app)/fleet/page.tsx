@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Plus } from "lucide-react"
+import { getCallerScope } from "@/lib/auth"
 import { getAdminVehicles } from "@/lib/vehicles"
 import { VehicleCard } from "@/components/admin/vehicle-card"
 import { Button } from "@/components/ui/button"
@@ -10,7 +11,12 @@ export const metadata: Metadata = {
 }
 
 export default async function FleetPage() {
-  const vehicles = await getAdminVehicles()
+  const scope = await getCallerScope()
+  const isAdmin = scope?.role === "admin"
+  // A sentinel, never-matching id when an owner has no company yet, so a
+  // misconfigured account sees nothing rather than accidentally everything.
+  const companyId = scope?.role === "owner" ? scope.companyId ?? "no-company-assigned" : undefined
+  const vehicles = await getAdminVehicles(companyId)
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10 sm:px-10">
@@ -42,6 +48,7 @@ export default async function FleetPage() {
               vehicle={vehicle}
               isFirst={index === 0}
               isLast={index === vehicles.length - 1}
+              canReorder={isAdmin}
             />
           ))}
         </div>

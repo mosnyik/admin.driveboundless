@@ -11,6 +11,7 @@ const userFields = `
   role,
   "active": coalesce(active, true),
   "mustChangePassword": coalesce(mustChangePassword, false),
+  "companyId": company->_id,
   createdAt,
   updatedAt
 `

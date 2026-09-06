@@ -1,14 +1,14 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getSession } from "@/lib/auth"
+import { getCallerScope, getSession } from "@/lib/auth"
 import { sanityFetch, sanityMutate } from "@/lib/sanity"
 import { APPLICATION_STATUSES, type ApplicationStatus } from "@/lib/application-types"
 
 export async function updateApplicationStatus(applicationId: string, newStatus: ApplicationStatus) {
-  const session = await getSession()
+  const [session, scope] = await Promise.all([getSession(), getCallerScope()])
 
-  if (!session) {
+  if (!session || !scope) {
     throw new Error("You must be signed in to do that.")
   }
 
@@ -16,13 +16,17 @@ export async function updateApplicationStatus(applicationId: string, newStatus: 
     throw new Error("Invalid status.")
   }
 
-  const current = await sanityFetch<{ status: ApplicationStatus } | null>(
-    `*[_id == $id][0]{status}`,
+  const current = await sanityFetch<{ status: ApplicationStatus; companyId: string | null } | null>(
+    `*[_id == $id][0]{status, "companyId": selectedVehicle.vehicle->company->_id}`,
     { id: applicationId },
   )
 
   if (!current) {
     throw new Error("Application not found.")
+  }
+
+  if (scope.role === "owner" && current.companyId !== scope.companyId) {
+    throw new Error("You can only update bookings for your own company.")
   }
 
   if (current.status === newStatus) {

@@ -28,10 +28,12 @@ export async function createUser({
   email,
   role,
   initialPassword,
+  companyId,
 }: {
   email: string
   role: AppUserRole
   initialPassword: string
+  companyId: string | null
 }) {
   await requireAdmin()
 
@@ -43,6 +45,10 @@ export async function createUser({
 
   if (role !== "admin" && role !== "owner") {
     throw new Error("Invalid role.")
+  }
+
+  if (role === "owner" && !companyId) {
+    throw new Error("Choose which company this owner belongs to.")
   }
 
   validatePassword(initialPassword)
@@ -64,8 +70,33 @@ export async function createUser({
         passwordHash,
         active: true,
         mustChangePassword: true,
+        company: role === "owner" && companyId ? { _type: "reference", _ref: companyId } : undefined,
         createdAt: now,
         updatedAt: now,
+      },
+    },
+  ])
+
+  revalidatePath("/settings")
+
+  return { ok: true as const }
+}
+
+export async function setUserCompany(userId: string, companyId: string) {
+  await requireAdmin()
+
+  if (!companyId) {
+    throw new Error("Choose a company.")
+  }
+
+  await sanityMutate([
+    {
+      patch: {
+        id: userId,
+        set: {
+          company: { _type: "reference", _ref: companyId },
+          updatedAt: new Date().toISOString(),
+        },
       },
     },
   ])

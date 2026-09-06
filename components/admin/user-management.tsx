@@ -26,29 +26,36 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Spinner } from "@/components/ui/spinner"
-import { createUser, resetUserPassword, setUserActive } from "@/lib/actions/users"
+import { createUser, resetUserPassword, setUserActive, setUserCompany } from "@/lib/actions/users"
 import type { AppUser, AppUserRole } from "@/lib/user-types"
+import type { Company } from "@/lib/company-types"
 
-function AddUserDialog() {
+function AddUserDialog({ companies }: { companies: Company[] }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<AppUserRole>("admin")
+  const [companyId, setCompanyId] = useState("")
   const [initialPassword, setInitialPassword] = useState("")
   const [pending, startTransition] = useTransition()
 
-  const canSubmit = email.trim().length > 0 && initialPassword.length >= 8 && !pending
+  const canSubmit =
+    email.trim().length > 0 &&
+    initialPassword.length >= 8 &&
+    (role !== "owner" || companyId.length > 0) &&
+    !pending
 
   function handleSubmit() {
     if (!canSubmit) return
 
     startTransition(async () => {
       try {
-        await createUser({ email, role, initialPassword })
+        await createUser({ email, role, initialPassword, companyId: role === "owner" ? companyId : null })
         toast.success(`Account created for ${email}`)
         setOpen(false)
         setEmail("")
         setRole("admin")
+        setCompanyId("")
         setInitialPassword("")
         router.refresh()
       } catch (error) {
@@ -99,6 +106,24 @@ function AddUserDialog() {
               </SelectContent>
             </Select>
           </div>
+
+          {role === "owner" && (
+            <div className="space-y-2">
+              <Label htmlFor="new-user-company">Company</Label>
+              <Select value={companyId} onValueChange={setCompanyId}>
+                <SelectTrigger id="new-user-company" className="w-full">
+                  <SelectValue placeholder="Select the company they own" />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="new-user-password">Initial password</Label>
@@ -205,7 +230,38 @@ function ResetPasswordDialog({ userId, email }: { userId: string; email: string 
   )
 }
 
-function UserRow({ user, isSelf }: { user: AppUser; isSelf: boolean }) {
+function CompanyReassign({ userId, companyId, companies }: { userId: string; companyId: string | null; companies: Company[] }) {
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+
+  function handleChange(value: string) {
+    startTransition(async () => {
+      try {
+        await setUserCompany(userId, value)
+        router.refresh()
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Couldn't reassign this owner.")
+      }
+    })
+  }
+
+  return (
+    <Select value={companyId ?? ""} onValueChange={handleChange} disabled={pending}>
+      <SelectTrigger size="sm" className="w-auto">
+        <SelectValue placeholder="No company" />
+      </SelectTrigger>
+      <SelectContent>
+        {companies.map((company) => (
+          <SelectItem key={company.id} value={company.id}>
+            {company.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+function UserRow({ user, isSelf, companies }: { user: AppUser; isSelf: boolean; companies: Company[] }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -240,6 +296,10 @@ function UserRow({ user, isSelf }: { user: AppUser; isSelf: boolean }) {
         </div>
       </div>
 
+      {user.role === "owner" && (
+        <CompanyReassign userId={user.id} companyId={user.companyId} companies={companies} />
+      )}
+
       <ResetPasswordDialog userId={user.id} email={user.email} />
 
       <div className="flex items-center gap-2">
@@ -254,17 +314,25 @@ function UserRow({ user, isSelf }: { user: AppUser; isSelf: boolean }) {
   )
 }
 
-export function UserManagement({ users, currentUserId }: { users: AppUser[]; currentUserId: string }) {
+export function UserManagement({
+  users,
+  currentUserId,
+  companies,
+}: {
+  users: AppUser[]
+  currentUserId: string
+  companies: Company[]
+}) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{users.length} account(s)</p>
-        <AddUserDialog />
+        <AddUserDialog companies={companies} />
       </div>
 
       <div className="space-y-2">
         {users.map((user) => (
-          <UserRow key={user.id} user={user} isSelf={user.id === currentUserId} />
+          <UserRow key={user.id} user={user} isSelf={user.id === currentUserId} companies={companies} />
         ))}
       </div>
     </div>

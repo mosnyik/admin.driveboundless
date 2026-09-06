@@ -1,7 +1,7 @@
 import Link from "next/link"
-import { getSession } from "@/lib/auth"
+import { getCallerScope, getSession } from "@/lib/auth"
 import { getDashboardAnalytics } from "@/lib/analytics"
-import { getVehicleOptions } from "@/lib/vehicles"
+import { getAdminVehicles } from "@/lib/vehicles"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   AlertCircle,
@@ -88,8 +88,14 @@ function VehicleBarList({
 }
 
 export default async function DashboardPage() {
-  const session = await getSession()
-  const [analytics, vehicles] = await Promise.all([getDashboardAnalytics(), getVehicleOptions()])
+  const [session, scope] = await Promise.all([getSession(), getCallerScope()])
+  // A sentinel, never-matching id when an owner has no company yet, so a
+  // misconfigured account sees nothing rather than accidentally everything.
+  const companyId = scope?.role === "owner" ? scope.companyId ?? "no-company-assigned" : undefined
+  const [analytics, vehicles] = await Promise.all([
+    getDashboardAnalytics(companyId),
+    getAdminVehicles(companyId),
+  ])
   const { statusCounts, totalApplications, topPerformingVehicles, mostChangedVehicles } = analytics
 
   return (

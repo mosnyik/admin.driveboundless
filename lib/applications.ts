@@ -5,21 +5,28 @@ import type { ApplicationDetail, ApplicationListItem } from "@/lib/application-t
 
 export * from "@/lib/application-types"
 
-const listQuery = `*[_type == "rentalApplication"] | order(submittedAt desc) {
-  "id": _id,
-  status,
-  submittedAt,
-  "statusUpdatedAt": coalesce(statusUpdatedAt, submittedAt),
-  "renterName": renter.fullName,
-  "renterEmail": renter.email,
-  "renterPhone": renter.phone,
-  "vehicleLabel": selectedVehicle.label,
-  "startDate": rental.startDate,
-  "endDate": rental.endDate
-}`
+function companyFilterClause(companyId?: string) {
+  return companyId ? ` && selectedVehicle.vehicle->company._ref == $companyId` : ""
+}
 
-export async function getApplications() {
-  const results = await sanityFetch<ApplicationListItem[]>(listQuery)
+export async function getApplications(companyId?: string) {
+  const listQuery = `*[_type == "rentalApplication"${companyFilterClause(companyId)}] | order(submittedAt desc) {
+    "id": _id,
+    status,
+    submittedAt,
+    "statusUpdatedAt": coalesce(statusUpdatedAt, submittedAt),
+    "renterName": renter.fullName,
+    "renterEmail": renter.email,
+    "renterPhone": renter.phone,
+    "vehicleLabel": selectedVehicle.label,
+    "startDate": rental.startDate,
+    "endDate": rental.endDate
+  }`
+
+  const results = await sanityFetch<ApplicationListItem[]>(
+    listQuery,
+    companyId ? { companyId } : {},
+  )
   return results ?? []
 }
 
@@ -87,9 +94,13 @@ const detailQuery = `*[_type == "rentalApplication" && _id == $id][0]{
   }
 }`
 
-export async function getApplicationById(id: string) {
+export async function getApplicationById(id: string, companyId?: string) {
   const result = await sanityFetch<ApplicationDetail>(detailQuery, { id })
   if (!result) return null
+
+  if (companyId && result.ownerCompany?.id !== companyId) {
+    return null
+  }
 
   return {
     ...result,

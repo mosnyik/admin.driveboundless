@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
+import { getCallerScope } from "@/lib/auth"
 import { getCompanyById } from "@/lib/companies"
 import { CompanyForm } from "@/components/admin/company-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,6 +16,9 @@ export default async function EditCompanyPage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  const scope = await getCallerScope()
+  if (scope?.role !== "admin") notFound()
+
   const { id } = await params
   const company = await getCompanyById(id)
 

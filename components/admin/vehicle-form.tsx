@@ -46,15 +46,20 @@ export function VehicleForm({
   initialValues,
   initialImageUrl,
   companies,
+  fixedCompany,
 }: {
   mode: "create" | "edit"
   vehicleId?: string
   initialValues?: VehicleFormValues
   initialImageUrl?: string | null
   companies: Company[]
+  /** Owner flow: the company field is locked to their own, not user-editable. */
+  fixedCompany?: { id: string; name: string }
 }) {
   const router = useRouter()
-  const [values, setValues] = useState<VehicleFormValues>(initialValues ?? DEFAULT_VALUES)
+  const [values, setValues] = useState<VehicleFormValues>(
+    initialValues ?? { ...DEFAULT_VALUES, companyId: fixedCompany?.id ?? null },
+  )
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(initialImageUrl ?? null)
   const [pending, startTransition] = useTransition()
@@ -290,22 +295,28 @@ export function VehicleForm({
 
       <div className="space-y-2">
         <Label htmlFor="company">Owner company</Label>
-        <Select
-          value={values.companyId ?? UNASSIGNED}
-          onValueChange={(value) => update("companyId", value === UNASSIGNED ? null : value)}
-        >
-          <SelectTrigger id="company" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
-            {companies.map((company) => (
-              <SelectItem key={company.id} value={company.id}>
-                {company.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {fixedCompany ? (
+          <p className="rounded-md border border-input bg-muted px-3 py-2 text-sm text-foreground">
+            {fixedCompany.name}
+          </p>
+        ) : (
+          <Select
+            value={values.companyId ?? UNASSIGNED}
+            onValueChange={(value) => update("companyId", value === UNASSIGNED ? null : value)}
+          >
+            <SelectTrigger id="company" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+              {companies.map((company) => (
+                <SelectItem key={company.id} value={company.id}>
+                  {company.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="flex items-center justify-between rounded-md border p-3">

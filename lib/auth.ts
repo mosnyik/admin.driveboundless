@@ -2,6 +2,7 @@ import "server-only"
 
 import { cookies } from "next/headers"
 import { SignJWT, jwtVerify } from "jose"
+import { getUserById } from "@/lib/users"
 
 const SESSION_COOKIE = "db_admin_session"
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7 // 7 days
@@ -92,6 +93,23 @@ export async function getSession(): Promise<AdminSession | null> {
   }
 
   return verifySessionToken(token)
+}
+
+export type CallerScope = { role: "admin" } | { role: "owner"; companyId: string | null }
+
+/** Admin resolves straight from the session (no DB hit). Owner does one fresh
+ * lookup for companyId so a reassignment takes effect immediately, same as
+ * the active-account check in app/(app)/layout.tsx. */
+export async function getCallerScope(): Promise<CallerScope | null> {
+  const session = await getSession()
+  if (!session) return null
+
+  if (session.role === "admin") {
+    return { role: "admin" }
+  }
+
+  const user = await getUserById(session.userId)
+  return { role: "owner", companyId: user?.companyId ?? null }
 }
 
 export { SESSION_COOKIE }

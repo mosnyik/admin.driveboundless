@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import { getActiveCompanies } from "@/lib/companies"
+import { getCallerScope } from "@/lib/auth"
+import { getActiveCompanies, getCompanyById } from "@/lib/companies"
 import { VehicleForm } from "@/components/admin/vehicle-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -10,7 +11,21 @@ export const metadata: Metadata = {
 }
 
 export default async function NewVehiclePage() {
-  const companies = await getActiveCompanies()
+  const scope = await getCallerScope()
+
+  const companies = scope?.role === "admin" ? await getActiveCompanies() : []
+  const ownCompany =
+    scope?.role === "owner" && scope.companyId ? await getCompanyById(scope.companyId) : null
+
+  if (scope?.role === "owner" && !ownCompany) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 py-10 sm:px-10">
+        <p className="text-sm text-muted-foreground">
+          Your account isn&apos;t linked to a company yet — contact an admin.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10 sm:px-10">
@@ -29,7 +44,11 @@ export default async function NewVehiclePage() {
           <CardTitle className="font-serif text-lg">Vehicle details</CardTitle>
         </CardHeader>
         <CardContent>
-          <VehicleForm mode="create" companies={companies} />
+          <VehicleForm
+            mode="create"
+            companies={companies}
+            fixedCompany={ownCompany ? { id: ownCompany.id, name: ownCompany.name } : undefined}
+          />
         </CardContent>
       </Card>
     </div>

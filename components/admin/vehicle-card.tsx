@@ -16,10 +16,12 @@ export function VehicleCard({
   vehicle,
   isFirst,
   isLast,
+  canReorder,
 }: {
   vehicle: AdminVehicle
   isFirst: boolean
   isLast: boolean
+  canReorder: boolean
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -88,28 +90,30 @@ export function VehicleCard({
             </Link>
           </Button>
 
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => handleReorder("up")}
-              disabled={pending || isFirst}
-              aria-label="Move up"
-            >
-              <ArrowUp className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => handleReorder("down")}
-              disabled={pending || isLast}
-              aria-label="Move down"
-            >
-              <ArrowDown className="size-4" />
-            </Button>
-          </div>
+          {canReorder && (
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => handleReorder("up")}
+                disabled={pending || isFirst}
+                aria-label="Move up"
+              >
+                <ArrowUp className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => handleReorder("down")}
+                disabled={pending || isLast}
+                aria-label="Move down"
+              >
+                <ArrowDown className="size-4" />
+              </Button>
+            </div>
+          )}
 
           <div className="ml-auto flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Available</span>

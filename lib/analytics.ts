@@ -21,11 +21,14 @@ interface RawApplication {
   changedFrom: Array<string | null> | null
 }
 
-const analyticsQuery = `*[_type == "rentalApplication"]{
-  status,
-  "vehicleLabel": selectedVehicle.label,
-  "changedFrom": vehicleChangeHistory[].previousVehicleLabel
-}`
+function analyticsQuery(companyId?: string) {
+  const filter = companyId ? ` && selectedVehicle.vehicle->company._ref == $companyId` : ""
+  return `*[_type == "rentalApplication"${filter}]{
+    status,
+    "vehicleLabel": selectedVehicle.label,
+    "changedFrom": vehicleChangeHistory[].previousVehicleLabel
+  }`
+}
 
 function normalizeLabel(label: string | null | undefined) {
   if (!label) return null
@@ -40,8 +43,9 @@ function topRanked(counts: Map<string, number>, limit = 5): VehicleStat[] {
     .slice(0, limit)
 }
 
-export async function getDashboardAnalytics(): Promise<DashboardAnalytics> {
-  const applications = (await sanityFetch<RawApplication[]>(analyticsQuery)) ?? []
+export async function getDashboardAnalytics(companyId?: string): Promise<DashboardAnalytics> {
+  const applications =
+    (await sanityFetch<RawApplication[]>(analyticsQuery(companyId), companyId ? { companyId } : {})) ?? []
 
   const statusCounts: Record<ApplicationStatus, number> = {
     new: 0,

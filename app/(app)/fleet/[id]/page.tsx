@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
+import { getCallerScope } from "@/lib/auth"
 import { getAdminVehicleById } from "@/lib/vehicles"
 import { getActiveCompanies } from "@/lib/companies"
 import { VehicleForm } from "@/components/admin/vehicle-form"
@@ -17,11 +18,23 @@ export default async function EditVehiclePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [vehicle, companies] = await Promise.all([getAdminVehicleById(id), getActiveCompanies()])
+  const scope = await getCallerScope()
+  // A sentinel, never-matching id when an owner has no company yet, so a
+  // misconfigured account gets a 404 rather than accidentally everything.
+  const companyId = scope?.role === "owner" ? scope.companyId ?? "no-company-assigned" : undefined
+  const [vehicle, companies] = await Promise.all([
+    getAdminVehicleById(id, companyId),
+    scope?.role === "admin" ? getActiveCompanies() : Promise.resolve([]),
+  ])
 
   if (!vehicle) {
     notFound()
   }
+
+  const fixedCompany =
+    scope?.role === "owner" && vehicle.companyId && vehicle.companyName
+      ? { id: vehicle.companyId, name: vehicle.companyName }
+      : undefined
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10 sm:px-10">
@@ -47,6 +60,7 @@ export default async function EditVehiclePage({
             vehicleId={vehicle.id}
             initialImageUrl={vehicle.imageUrl}
             companies={companies}
+            fixedCompany={fixedCompany}
             initialValues={{
               make: vehicle.make,
               model: vehicle.model,

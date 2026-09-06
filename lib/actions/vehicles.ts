@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getSession } from "@/lib/auth"
+import { getCallerScope } from "@/lib/auth"
 import { sanityFetch, sanityMutate, uploadSanityImage } from "@/lib/sanity"
 import { getAdminVehicles } from "@/lib/vehicles"
 import { FUEL_TYPES, type VehicleFormValues } from "@/lib/vehicle-types"
@@ -59,8 +59,14 @@ async function uploadImageIfProvided(imageFile: File | null) {
 }
 
 export async function createVehicle(values: VehicleFormValues, imageFile: File | null) {
-  const session = await getSession()
-  if (!session) throw new Error("You must be signed in to do that.")
+  const scope = await getCallerScope()
+  if (!scope) throw new Error("You must be signed in to do that.")
+
+  let companyId = values.companyId
+  if (scope.role === "owner") {
+    if (!scope.companyId) throw new Error("Your account isn't linked to a company yet — contact an admin.")
+    companyId = scope.companyId
+  }
 
   validateValues(values)
 
@@ -78,7 +84,7 @@ export async function createVehicle(values: VehicleFormValues, imageFile: File |
     image: imageAssetId
       ? { _type: "image", asset: { _type: "reference", _ref: imageAssetId } }
       : undefined,
-    company: companyReference(values.companyId),
+    company: companyReference(companyId),
   }
 
   const result = (await sanityMutate([{ create: document }])) as { results?: Array<{ id?: string }> }
@@ -90,14 +96,26 @@ export async function createVehicle(values: VehicleFormValues, imageFile: File |
 }
 
 export async function updateVehicle(id: string, values: VehicleFormValues, imageFile: File | null) {
-  const session = await getSession()
-  if (!session) throw new Error("You must be signed in to do that.")
+  const scope = await getCallerScope()
+  if (!scope) throw new Error("You must be signed in to do that.")
+
+  let companyId = values.companyId
+  if (scope.role === "owner") {
+    const current = await sanityFetch<{ companyId: string | null }>(
+      `*[_id == $id][0]{"companyId": company->_id}`,
+      { id },
+    )
+    if (!current || current.companyId !== scope.companyId) {
+      throw new Error("You can only edit your own company's vehicles.")
+    }
+    companyId = scope.companyId
+  }
 
   validateValues(values)
 
   const imageAssetId = await uploadImageIfProvided(imageFile)
 
-  const companyRef = companyReference(values.companyId)
+  const companyRef = companyReference(companyId)
 
   await sanityMutate([
     {
@@ -122,8 +140,18 @@ export async function updateVehicle(id: string, values: VehicleFormValues, image
 }
 
 export async function setVehicleAvailability(id: string, available: boolean) {
-  const session = await getSession()
-  if (!session) throw new Error("You must be signed in to do that.")
+  const scope = await getCallerScope()
+  if (!scope) throw new Error("You must be signed in to do that.")
+
+  if (scope.role === "owner") {
+    const current = await sanityFetch<{ companyId: string | null }>(
+      `*[_id == $id][0]{"companyId": company->_id}`,
+      { id },
+    )
+    if (!current || current.companyId !== scope.companyId) {
+      throw new Error("You can only update your own company's vehicles.")
+    }
+  }
 
   await sanityMutate([{ patch: { id, set: { available } } }])
 
@@ -133,8 +161,9 @@ export async function setVehicleAvailability(id: string, available: boolean) {
 }
 
 export async function reorderVehicle(id: string, direction: "up" | "down") {
-  const session = await getSession()
-  if (!session) throw new Error("You must be signed in to do that.")
+  const scope = await getCallerScope()
+  if (!scope) throw new Error("You must be signed in to do that.")
+  if (scope.role !== "admin") throw new Error("Only an administrator can reorder the fleet.")
 
   const vehicles = await getAdminVehicles()
   const index = vehicles.findIndex((vehicle) => vehicle.id === id)

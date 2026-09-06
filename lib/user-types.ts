@@ -6,6 +6,7 @@ export interface AppUser {
   role: AppUserRole
   active: boolean
   mustChangePassword: boolean
+  companyId: string | null
   createdAt: string
   updatedAt: string
 }

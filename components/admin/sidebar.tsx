@@ -7,6 +7,7 @@ import { useState } from "react"
 import { Building2, Car, FileText, LayoutDashboard, LogOut, Menu, Moon, Settings, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
+import type { AppUserRole } from "@/lib/user-types"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,11 +19,11 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/applications", label: "Applications", icon: FileText },
-  { href: "/fleet", label: "Fleet", icon: Car },
-  { href: "/companies", label: "Companies", icon: Building2 },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard, adminOnly: false },
+  { href: "/applications", label: "Applications", icon: FileText, adminOnly: false },
+  { href: "/fleet", label: "Fleet", icon: Car, adminOnly: false },
+  { href: "/companies", label: "Companies", icon: Building2, adminOnly: true },
+  { href: "/settings", label: "Settings", icon: Settings, adminOnly: false },
 ]
 
 function BrandMark() {
@@ -41,12 +42,13 @@ function BrandMark() {
   )
 }
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function NavLinks({ onNavigate, role }: { onNavigate?: () => void; role: AppUserRole }) {
   const pathname = usePathname()
+  const items = navItems.filter((item) => !item.adminOnly || role === "admin")
 
   return (
     <nav className="flex-1 space-y-1 px-3 py-2">
-      {navItems.map((item) => {
+      {items.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
         const Icon = item.icon
         return (
@@ -128,7 +130,7 @@ function AccountMenu({ email }: { email: string }) {
   )
 }
 
-export function AdminSidebar({ email }: { email: string }) {
+export function AdminSidebar({ email, role }: { email: string; role: AppUserRole }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -136,7 +138,7 @@ export function AdminSidebar({ email }: { email: string }) {
       {/* Desktop sidebar */}
       <aside className="hidden h-full w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
         <BrandMark />
-        <NavLinks />
+        <NavLinks role={role} />
         <AccountMenu email={email} />
       </aside>
 
@@ -162,7 +164,7 @@ export function AdminSidebar({ email }: { email: string }) {
               Links to the admin dashboard sections and account menu.
             </SheetDescription>
             <BrandMark />
-            <NavLinks onNavigate={() => setOpen(false)} />
+            <NavLinks onNavigate={() => setOpen(false)} role={role} />
             <AccountMenu email={email} />
           </SheetContent>
         </Sheet>

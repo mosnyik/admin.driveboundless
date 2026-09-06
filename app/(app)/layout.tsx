@@ -25,7 +25,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen md:flex">
-      <AdminSidebar email={session.email} />
+      <AdminSidebar email={session.email} role={user.role} />
       <main className="min-w-0 flex-1 overflow-x-hidden">{children}</main>
     </div>
   )
