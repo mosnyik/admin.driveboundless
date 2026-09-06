@@ -44,8 +44,11 @@ export async function POST(request: Request) {
   }
 
   const recipients = await getAlertRecipients()
+  const companyEmail = application.ownerCompany?.notificationEmail?.trim().toLowerCase() || null
+  const companyNeedsOwnSend =
+    companyEmail !== null && !recipients.some((recipient) => recipient.toLowerCase() === companyEmail)
 
-  if (recipients.length === 0) {
+  if (recipients.length === 0 && !companyNeedsOwnSend) {
     return NextResponse.json({ ok: true, skipped: "no_recipients" })
   }
 
@@ -59,17 +62,33 @@ export async function POST(request: Request) {
     endDate: application.rental.endDate || null,
   })
 
-  try {
-    await sendEmail({
-      to: recipients,
-      subject: email.subject,
-      html: email.html,
-      text: email.text,
-      fromName: "New Rental Alert",
-    })
-  } catch (error) {
-    console.error("Failed to send new-application alert email", error)
-    return NextResponse.json({ error: "Failed to send email." }, { status: 502 })
+  if (recipients.length > 0) {
+    try {
+      await sendEmail({
+        to: recipients,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        fromName: "New Rental Alert",
+      })
+    } catch (error) {
+      console.error("Failed to send new-application alert email", error)
+      return NextResponse.json({ error: "Failed to send email." }, { status: 502 })
+    }
+  }
+
+  if (companyNeedsOwnSend && companyEmail) {
+    try {
+      await sendEmail({
+        to: companyEmail,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        fromName: "New Rental Alert",
+      })
+    } catch (error) {
+      console.error("Failed to send owner-company alert email", error)
+    }
   }
 
   return NextResponse.json({ ok: true })

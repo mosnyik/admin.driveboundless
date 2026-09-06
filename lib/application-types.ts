@@ -125,6 +125,11 @@ export interface ApplicationDetail {
     licenseNumber: string
     licenseState: string
   }>
+  ownerCompany: {
+    id: string
+    name: string
+    notificationEmail: string
+  } | null
   agreementAccepted: boolean
   agreement: {
     accepted: boolean

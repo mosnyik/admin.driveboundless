@@ -67,6 +67,7 @@ const detailQuery = `*[_type == "rentalApplication" && _id == $id][0]{
     "vehicleId": vehicle->_id,
     "vehicleImage": vehicle->image.asset->url
   },
+  "ownerCompany": selectedVehicle.vehicle->company->{"id": _id, name, "notificationEmail": coalesce(notificationEmail, email)},
   additionalDrivers,
   agreementAccepted,
   agreement{

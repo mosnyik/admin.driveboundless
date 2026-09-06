@@ -69,7 +69,9 @@ export default async function SettingsPage() {
           <CardHeader>
             <CardTitle className="font-serif text-lg">New application alerts</CardTitle>
             <CardDescription>
-              Everyone on this list gets an email the moment a new rental application arrives.
+              Everyone on this list gets an email the moment a new rental application arrives. This
+              is the central, admin-wide list — each company&apos;s own notification address is set
+              from its entry on the Companies page.
             </CardDescription>
           </CardHeader>
           <CardContent>
