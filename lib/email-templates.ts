@@ -101,6 +101,54 @@ export function newApplicationAlertEmail(input: NewApplicationEmailInput) {
   }
 }
 
+interface OwnerApprovalEmailInput {
+  token: string
+  renterName: string
+  vehicleLabel: string | null
+  startDate: string | null
+  endDate: string | null
+}
+
+export function ownerApprovalAlertEmail(input: OwnerApprovalEmailInput) {
+  const reviewUrl = `${getAppUrl()}/owner-action/${input.token}`
+  const dateRange =
+    input.startDate && input.endDate ? `${input.startDate} – ${input.endDate}` : "Not specified"
+
+  const html = wrapper(`
+    <h1 style="margin:0 0 4px;font-size:22px;">New rental request</h1>
+    <p style="margin:0 0 24px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;">
+      A rental request for one of your vehicles is waiting on your decision.
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;font-size:14px;margin-bottom:24px;">
+      <tr><td style="padding:6px 0;color:#8a8375;">Renter</td><td style="padding:6px 0;text-align:right;font-weight:600;">${escapeHtml(input.renterName || "—")}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8375;">Vehicle</td><td style="padding:6px 0;text-align:right;">${escapeHtml(input.vehicleLabel || "Not selected")}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8375;">Dates</td><td style="padding:6px 0;text-align:right;">${escapeHtml(dateRange)}</td></tr>
+    </table>
+    ${button("Review & respond", reviewUrl)}
+    <p style="margin:20px 0 0;color:#8a8375;font-family:Arial,sans-serif;font-size:12px;">
+      No login needed — this link is unique to this request and expires once you've responded or after 14 days.
+    </p>
+  `)
+
+  const text = [
+    "New rental request",
+    "",
+    `Renter: ${input.renterName || "—"}`,
+    `Vehicle: ${input.vehicleLabel || "Not selected"}`,
+    `Dates: ${dateRange}`,
+    "",
+    `Review & respond: ${reviewUrl}`,
+    "",
+    "No login needed — this link is unique to this request and expires once you've responded or after 14 days.",
+  ].join("\n")
+
+  return {
+    subject: `Rental request needs your decision — ${input.renterName || "Untitled applicant"}`,
+    html,
+    text,
+  }
+}
+
 interface AgreementEmailInput {
   renterName: string
   vehicleLabel: string | null

@@ -3,7 +3,9 @@ import { isValidSignature, SIGNATURE_HEADER_NAME } from "@sanity/webhook"
 import { getApplicationById } from "@/lib/applications"
 import { getAlertRecipients } from "@/lib/settings"
 import { sendEmail } from "@/lib/email"
-import { newApplicationAlertEmail } from "@/lib/email-templates"
+import { newApplicationAlertEmail, ownerApprovalAlertEmail } from "@/lib/email-templates"
+import { issueOwnerApprovalToken } from "@/lib/owner-approval"
+import { isTerminalStatus } from "@/lib/application-types"
 
 interface WebhookPayload {
   _id?: string
@@ -77,13 +79,22 @@ export async function POST(request: Request) {
     }
   }
 
-  if (companyNeedsOwnSend && companyEmail) {
+  if (companyNeedsOwnSend && companyEmail && !isTerminalStatus(application.status)) {
     try {
+      const token = await issueOwnerApprovalToken(application.id)
+      const ownerEmail = ownerApprovalAlertEmail({
+        token,
+        renterName: application.renter.fullName,
+        vehicleLabel: application.selectedVehicle?.label ?? null,
+        startDate: application.rental.startDate || null,
+        endDate: application.rental.endDate || null,
+      })
+
       await sendEmail({
         to: companyEmail,
-        subject: email.subject,
-        html: email.html,
-        text: email.text,
+        subject: ownerEmail.subject,
+        html: ownerEmail.html,
+        text: ownerEmail.text,
         fromName: "New Rental Alert",
       })
     } catch (error) {
