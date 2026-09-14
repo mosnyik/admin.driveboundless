@@ -124,6 +124,20 @@ export async function setUserCompany(userId: string, companyId: string) {
   return { ok: true as const }
 }
 
+export async function deleteUser(userId: string) {
+  const session = await requireAdmin()
+
+  if (userId === session.userId) {
+    throw new Error("You can't delete your own account.")
+  }
+
+  await sanityMutate([{ delete: { id: userId } }])
+
+  revalidatePath("/settings")
+
+  return { ok: true as const }
+}
+
 export async function setUserActive(userId: string, active: boolean) {
   const session = await requireAdmin()
 

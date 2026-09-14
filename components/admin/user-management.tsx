@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { KeyRound, Plus, ShieldCheck } from "lucide-react"
+import { KeyRound, Plus, ShieldCheck, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,8 +25,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Spinner } from "@/components/ui/spinner"
-import { createUser, resetUserPassword, setUserActive, setUserCompany } from "@/lib/actions/users"
+import { createUser, deleteUser, resetUserPassword, setUserActive, setUserCompany } from "@/lib/actions/users"
 import type { AppUser, AppUserRole } from "@/lib/user-types"
 import type { Company } from "@/lib/company-types"
 
@@ -236,6 +247,60 @@ function ResetPasswordDialog({ userId, email }: { userId: string; email: string 
   )
 }
 
+function DeleteUserDialog({ userId, email }: { userId: string; email: string }) {
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+
+  function handleDelete() {
+    startTransition(async () => {
+      try {
+        await deleteUser(userId)
+        toast.success(`Removed ${email}`)
+        router.refresh()
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Couldn't remove this account.")
+      }
+    })
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="icon" className="text-destructive hover:text-destructive">
+          <Trash2 className="size-4" />
+          <span className="sr-only">Delete {email}</span>
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove {email}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This permanently deletes their account. They&apos;ll lose access immediately and can only
+            come back by being added again. This can&apos;t be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            disabled={pending}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {pending ? (
+              <>
+                <Spinner />
+                Removing…
+              </>
+            ) : (
+              "Delete account"
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
 function CompanyReassign({ userId, companyId, companies }: { userId: string; companyId: string | null; companies: Company[] }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -316,6 +381,8 @@ function UserRow({ user, isSelf, companies }: { user: AppUser; isSelf: boolean; 
           disabled={pending || isSelf}
         />
       </div>
+
+      {!isSelf && <DeleteUserDialog userId={user.id} email={user.email} />}
     </div>
   )
 }
