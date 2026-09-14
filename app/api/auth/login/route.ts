@@ -33,6 +33,8 @@ function clearFailures(key: string) {
   attempts.delete(key)
 }
 
+/** Owner accounts only — admin accounts sign in with Google (see /api/auth/google)
+ * and never have a passwordHash, so they can never pass this check. */
 export async function POST(request: Request) {
   const clientKey = getClientKey(request)
 
@@ -59,7 +61,8 @@ export async function POST(request: Request) {
   }
 
   const user = await getUserByEmail(email)
-  const passwordMatches = user ? await bcrypt.compare(password, user.passwordHash) : false
+  const passwordMatches =
+    user?.role === "owner" && user.passwordHash ? await bcrypt.compare(password, user.passwordHash) : false
 
   if (!user || !user.active || !passwordMatches) {
     recordFailure(clientKey)

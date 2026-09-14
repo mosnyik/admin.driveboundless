@@ -12,13 +12,14 @@ store. No separate database — Sanity *is* the database.
 ## What it does
 
 ### Authentication
-Email + password login gated behind a signed session cookie. Accounts (role
-`admin` or `owner`) are `appUser` documents in Sanity — no public sign-up;
-accounts are created from Settings > Team by an existing admin, with a
-password they can change from Settings themselves afterward. Every route
-outside `/login` is protected by middleware (`proxy.ts` in Next.js 16) and,
-for the active/deactivated check, a second server-side check in
-`app/(app)/layout.tsx`.
+Accounts (role `admin` or `owner`) are `appUser` documents in Sanity — no
+public sign-up; accounts are created from Settings > Team by an existing
+admin. Admin accounts sign in with Google, restricted to whichever email an
+admin has approved. Owner accounts sign in with email + password, set from
+Settings > Team and changeable by the owner afterward. Either path issues the
+same signed session cookie. Every route outside `/login` is protected by
+middleware (`proxy.ts` in Next.js 16) and, for the active/deactivated check,
+a second server-side check in `app/(app)/layout.tsx`.
 
 ### Applications dashboard
 Lists every rental application submitted through the public site, with
@@ -78,7 +79,8 @@ readable on any screen size.
 - **Sanity** as the content store — accessed via direct HTTP calls to
   Sanity's HTTP API (query + mutate), no SDK dependency
 - **Tailwind CSS v4** + **shadcn/ui** (Radix primitives) for the UI
-- **jose** for signed session cookies, **bcryptjs** for password hashing
+- **jose** for signed session cookies and Google ID token verification,
+  **bcryptjs** for owner password hashing
 - **Resend** for transactional email
 - **@sanity/webhook** for verifying inbound webhook signatures
 - **Vercel Analytics**
@@ -88,7 +90,7 @@ readable on any screen size.
 ```
 app/(app)/          Authenticated admin routes (dashboard, applications, fleet, settings)
 app/login/          Login page
-app/api/auth/       Login/logout route handlers
+app/api/auth/       Login/logout route handlers (Google OAuth + owner password)
 app/api/webhooks/   Inbound Sanity webhook (new-application alert trigger)
 lib/                Sanity access, business logic, server actions, email
 components/admin/   Admin-specific UI (sidebar, status controls, vehicle forms, etc.)
@@ -101,12 +103,13 @@ proxy.ts            Auth middleware (Next.js 16's renamed middleware.ts)
 ```bash
 pnpm install
 cp .example.env .env.local          # fill in the values described below
-pnpm hash-password "your password"  # generates ADMIN_PASSWORD_HASH
-pnpm seed-admin-user                # creates the first appUser from ADMIN_EMAIL/ADMIN_PASSWORD_HASH
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). The first admin account
+must already exist as an `appUser` document in Sanity (role `admin`,
+matching the Google account you'll sign in with) — create it directly in
+Sanity, or from another admin's Settings > Team once one exists.
 
 ### Environment variables
 
@@ -114,8 +117,7 @@ See `.example.env` for the full list with inline explanations. In
 short, you'll need:
 
 - Sanity project ID, dataset name, and a write-enabled API token
-- An admin email + bcrypt password hash, used once by `pnpm seed-admin-user`
-  to create the first account — not read at login time after that
+- A Google OAuth client ID/secret, for admin sign-in
 - A random session-signing secret
 - A Resend API key (and optionally a verified sender domain) for email
 - A shared secret for the Sanity webhook that triggers new-application alerts
@@ -132,8 +134,6 @@ settings.
 | `pnpm build` | Production build |
 | `pnpm start` | Run a production build |
 | `pnpm lint` | Lint the codebase |
-| `pnpm hash-password "<password>"` | Generate a bcrypt hash for `ADMIN_PASSWORD_HASH` |
-| `pnpm seed-admin-user` | One-time: create the first `appUser` from `ADMIN_EMAIL`/`ADMIN_PASSWORD_HASH` |
 
 ## Deployment
 

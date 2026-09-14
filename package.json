@@ -6,14 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "hash-password": "node scripts/hash-password.mjs",
-    "seed-admin-user": "node scripts/seed-admin-user.mjs"
+    "lint": "eslint"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
-    "@sanity/webhook": "^4.0.4",
-    "@vercel/analytics": "1.6.1",
     "@radix-ui/react-accordion": "1.2.12",
     "@radix-ui/react-alert-dialog": "1.1.15",
     "@radix-ui/react-aspect-ratio": "1.1.8",
@@ -41,8 +37,10 @@
     "@radix-ui/react-toggle": "1.1.10",
     "@radix-ui/react-toggle-group": "1.1.11",
     "@radix-ui/react-tooltip": "1.2.8",
+    "@sanity/webhook": "^4.0.4",
+    "@vercel/analytics": "1.6.1",
     "autoprefixer": "^10.4.20",
-    "bcryptjs": "^2.4.3",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.1.1",
@@ -67,7 +65,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

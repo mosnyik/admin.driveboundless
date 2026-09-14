@@ -32,16 +32,18 @@ function validatePassword(password: string) {
   }
 }
 
+/** Admin accounts sign in with Google and never get a password. Owner accounts
+ * are handed an initial password by an admin and sign in with email + password. */
 export async function createUser({
   email,
   role,
-  initialPassword,
   companyId,
+  initialPassword,
 }: {
   email: string
   role: AppUserRole
-  initialPassword: string
   companyId: string | null
+  initialPassword?: string
 }) {
   await requireAdmin()
 
@@ -59,14 +61,21 @@ export async function createUser({
     throw new Error("Choose which company this owner belongs to.")
   }
 
-  validatePassword(initialPassword)
-
   const existing = await getUserByEmail(cleanedEmail)
   if (existing) {
     throw new Error(`An account already exists for ${cleanedEmail}.`)
   }
 
-  const passwordHash = await bcrypt.hash(initialPassword, BCRYPT_COST)
+  let passwordHash: string | undefined
+
+  if (role === "owner") {
+    if (!initialPassword) {
+      throw new Error("Set an initial password for this owner.")
+    }
+    validatePassword(initialPassword)
+    passwordHash = await bcrypt.hash(initialPassword, BCRYPT_COST)
+  }
+
   const now = new Date().toISOString()
 
   await sanityMutate([
@@ -75,9 +84,10 @@ export async function createUser({
         _type: "appUser",
         email: cleanedEmail,
         role,
-        passwordHash,
         active: true,
-        mustChangePassword: true,
+        ...(passwordHash
+          ? { passwordHash, mustChangePassword: true }
+          : { mustChangePassword: false }),
         company: role === "owner" && companyId ? { _type: "reference", _ref: companyId } : undefined,
         createdAt: now,
         updatedAt: now,
@@ -130,8 +140,16 @@ export async function setUserActive(userId: string, active: boolean) {
   return { ok: true as const }
 }
 
+/** Owner accounts only — an admin resetting their own password makes no sense
+ * since admin accounts sign in with Google and have none. */
 export async function resetUserPassword(userId: string, newPassword: string) {
   await requireAdmin()
+
+  const user = await getUserById(userId)
+  if (!user) throw new Error("Account not found.")
+  if (user.role !== "owner") {
+    throw new Error("This account signs in with Google and has no password to reset.")
+  }
 
   validatePassword(newPassword)
 
@@ -155,10 +173,14 @@ export async function changeOwnPassword(currentPassword: string, newPassword: st
   const session = await getSession()
   if (!session) throw new Error("You must be signed in to do that.")
 
-  validatePassword(newPassword)
-
   const user = await getUserById(session.userId)
   if (!user) throw new Error("Your account could not be found.")
+
+  if (!user.passwordHash) {
+    throw new Error("Your account signs in with Google and has no password.")
+  }
+
+  validatePassword(newPassword)
 
   const currentMatches = await bcrypt.compare(currentPassword, user.passwordHash)
   if (!currentMatches) {

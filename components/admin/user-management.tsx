@@ -41,8 +41,7 @@ function AddUserDialog({ companies }: { companies: Company[] }) {
 
   const canSubmit =
     email.trim().length > 0 &&
-    initialPassword.length >= 8 &&
-    (role !== "owner" || companyId.length > 0) &&
+    (role !== "owner" || (companyId.length > 0 && initialPassword.length >= 8)) &&
     !pending
 
   function handleSubmit() {
@@ -50,7 +49,12 @@ function AddUserDialog({ companies }: { companies: Company[] }) {
 
     startTransition(async () => {
       try {
-        await createUser({ email, role, initialPassword, companyId: role === "owner" ? companyId : null })
+        await createUser({
+          email,
+          role,
+          companyId: role === "owner" ? companyId : null,
+          initialPassword: role === "owner" ? initialPassword : undefined,
+        })
         toast.success(`Account created for ${email}`)
         setOpen(false)
         setEmail("")
@@ -76,8 +80,8 @@ function AddUserDialog({ companies }: { companies: Company[] }) {
         <DialogHeader>
           <DialogTitle>Add a person</DialogTitle>
           <DialogDescription>
-            They&apos;ll sign in with this email and password, and are asked to set their own
-            password on first login.
+            Admins sign in with Google using this email — no password needed. Owners sign in with
+            this email and the password you set below.
           </DialogDescription>
         </DialogHeader>
 
@@ -125,17 +129,19 @@ function AddUserDialog({ companies }: { companies: Company[] }) {
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="new-user-password">Initial password</Label>
-            <Input
-              id="new-user-password"
-              type="text"
-              value={initialPassword}
-              onChange={(event) => setInitialPassword(event.target.value)}
-              placeholder="Share this with them directly"
-              disabled={pending}
-            />
-          </div>
+          {role === "owner" && (
+            <div className="space-y-2">
+              <Label htmlFor="new-user-password">Initial password</Label>
+              <Input
+                id="new-user-password"
+                type="text"
+                value={initialPassword}
+                onChange={(event) => setInitialPassword(event.target.value)}
+                placeholder="Share this with them directly"
+                disabled={pending}
+              />
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -288,7 +294,7 @@ function UserRow({ user, isSelf, companies }: { user: AppUser; isSelf: boolean; 
             {user.role === "admin" && <ShieldCheck className="size-3" />}
             {user.role}
           </Badge>
-          {user.mustChangePassword && (
+          {user.role === "owner" && user.mustChangePassword && (
             <Badge variant="secondary" className="text-xs">
               Password not yet set
             </Badge>
@@ -300,7 +306,7 @@ function UserRow({ user, isSelf, companies }: { user: AppUser; isSelf: boolean; 
         <CompanyReassign userId={user.id} companyId={user.companyId} companies={companies} />
       )}
 
-      <ResetPasswordDialog userId={user.id} email={user.email} />
+      {user.role === "owner" && <ResetPasswordDialog userId={user.id} email={user.email} />}
 
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground">Active</span>

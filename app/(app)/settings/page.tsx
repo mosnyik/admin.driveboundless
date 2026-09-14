@@ -21,7 +21,7 @@ export default async function SettingsPage() {
 
   const [settings, currentUser, companies, ownCompany] = await Promise.all([
     isAdmin ? getNotificationSettings() : null,
-    session ? getUserById(session.userId) : null,
+    isOwner && session ? getUserById(session.userId) : Promise.resolve(null),
     isAdmin ? getActiveCompanies() : Promise.resolve([]),
     isOwner && scope.companyId ? getCompanyById(scope.companyId) : Promise.resolve(null),
   ])
@@ -47,15 +47,17 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-serif text-lg">Your account</CardTitle>
-            <CardDescription>Change the password you sign in with.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AccountSettingsForm mustChangePassword={currentUser?.mustChangePassword ?? false} />
-          </CardContent>
-        </Card>
+        {isOwner && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif text-lg">Your account</CardTitle>
+              <CardDescription>Change the password you sign in with.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AccountSettingsForm mustChangePassword={currentUser?.mustChangePassword ?? false} />
+            </CardContent>
+          </Card>
+        )}
 
         {isOwner && (
           <Card>
@@ -88,8 +90,8 @@ export default async function SettingsPage() {
             <CardHeader>
               <CardTitle className="font-serif text-lg">Team</CardTitle>
               <CardDescription>
-                People who can sign in to this dashboard. Set a password for them here — they&apos;ll
-                choose their own on first login.
+                People who can sign in to this dashboard. Admins sign in with Google — just approve
+                their email. Owners sign in with a password you set here.
               </CardDescription>
             </CardHeader>
             <CardContent>

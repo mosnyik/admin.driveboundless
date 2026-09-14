@@ -16,7 +16,8 @@ const userFields = `
   updatedAt
 `
 
-/** Includes passwordHash — server-only, and only for use immediately before bcrypt.compare/hash. */
+/** Includes passwordHash (when set) — server-only, and only for use immediately before
+ * bcrypt.compare/hash. Admin accounts sign in with Google and never have one. */
 export async function getUserByEmail(email: string): Promise<AppUserWithPasswordHash | null> {
   return sanityFetch<AppUserWithPasswordHash>(
     `*[_type == "appUser" && lower(email) == $email][0]{ ${userFields}, passwordHash }`,
