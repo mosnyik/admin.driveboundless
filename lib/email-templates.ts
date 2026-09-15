@@ -154,6 +154,7 @@ interface BookingConfirmationEmailInput {
   vehicleLabel: string | null
   startDate: string | null
   endDate: string | null
+  agreementAttached: boolean
 }
 
 export function bookingConfirmationEmail(input: BookingConfirmationEmailInput) {
@@ -170,7 +171,7 @@ export function bookingConfirmationEmail(input: BookingConfirmationEmailInput) {
       <tr><td style="padding:6px 0;color:#8a8375;">Dates</td><td style="padding:6px 0;text-align:right;">${escapeHtml(dateRange)}</td></tr>
     </table>
     <p style="margin:0;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
-      Your rental agreement will follow separately. If anything looks off, just reply to this email.
+      ${input.agreementAttached ? "Your rental agreement is attached." : "Your rental agreement will follow separately."} If anything looks off, just reply to this email.
     </p>
   `)
 
@@ -182,7 +183,7 @@ export function bookingConfirmationEmail(input: BookingConfirmationEmailInput) {
     `Vehicle: ${input.vehicleLabel || "Not selected"}`,
     `Dates: ${dateRange}`,
     "",
-    "Your rental agreement will follow separately. If anything looks off, just reply to this email.",
+    `${input.agreementAttached ? "Your rental agreement is attached." : "Your rental agreement will follow separately."} If anything looks off, just reply to this email.`,
   ].join("\n")
 
   return {
