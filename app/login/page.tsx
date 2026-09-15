@@ -199,8 +199,8 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Sign-in panel */}
-      <div className="flex items-center justify-center px-6 py-16 sm:px-12">
+      {/* Sign-in panel — pinned to the light palette regardless of theme */}
+      <div className="light flex items-center justify-center bg-background px-6 py-16 text-foreground sm:px-12">
         <div className="w-full max-w-sm">
           <div className="mb-10 flex flex-col items-center gap-4 lg:hidden">
             <Image
