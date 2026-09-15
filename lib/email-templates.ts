@@ -149,6 +149,49 @@ export function ownerApprovalAlertEmail(input: OwnerApprovalEmailInput) {
   }
 }
 
+interface BookingConfirmationEmailInput {
+  renterName: string
+  vehicleLabel: string | null
+  startDate: string | null
+  endDate: string | null
+}
+
+export function bookingConfirmationEmail(input: BookingConfirmationEmailInput) {
+  const dateRange =
+    input.startDate && input.endDate ? `${input.startDate} – ${input.endDate}` : "Not specified"
+
+  const html = wrapper(`
+    <h1 style="margin:0 0 4px;font-size:22px;">You're confirmed!</h1>
+    <p style="margin:0 0 24px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Hi ${escapeHtml(input.renterName || "there")}, your rental request has been approved. Here are the details:
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;font-size:14px;margin-bottom:24px;">
+      <tr><td style="padding:6px 0;color:#8a8375;">Vehicle</td><td style="padding:6px 0;text-align:right;">${escapeHtml(input.vehicleLabel || "Not selected")}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8375;">Dates</td><td style="padding:6px 0;text-align:right;">${escapeHtml(dateRange)}</td></tr>
+    </table>
+    <p style="margin:0;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Your rental agreement will follow separately. If anything looks off, just reply to this email.
+    </p>
+  `)
+
+  const text = [
+    "You're confirmed!",
+    "",
+    `Hi ${input.renterName || "there"}, your rental request has been approved. Here are the details:`,
+    "",
+    `Vehicle: ${input.vehicleLabel || "Not selected"}`,
+    `Dates: ${dateRange}`,
+    "",
+    "Your rental agreement will follow separately. If anything looks off, just reply to this email.",
+  ].join("\n")
+
+  return {
+    subject: "You're confirmed — Drive Boundless rental",
+    html,
+    text,
+  }
+}
+
 interface AgreementEmailInput {
   renterName: string
   vehicleLabel: string | null

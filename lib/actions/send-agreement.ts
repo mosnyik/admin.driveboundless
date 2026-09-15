@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { getSession } from "@/lib/auth"
 import { sanityFetch, sanityMutate } from "@/lib/sanity"
-import { sendEmail } from "@/lib/email"
+import { sendEmail, RENTER_REPLY_TO_EMAIL } from "@/lib/email"
 import { agreementEmail } from "@/lib/email-templates"
 
 interface ApplicationForEmail {
@@ -64,6 +64,7 @@ export async function sendAgreementToCustomer(applicationId: string) {
     html: email.html,
     text: email.text,
     attachments: [{ filename: "rental-agreement.pdf", content: pdfBuffer }],
+    replyTo: RENTER_REPLY_TO_EMAIL,
   })
 
   const now = new Date().toISOString()

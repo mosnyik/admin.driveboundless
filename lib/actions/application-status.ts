@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { getCallerScope, getSession } from "@/lib/auth"
 import { sanityFetch, sanityMutate } from "@/lib/sanity"
 import { APPLICATION_STATUSES, type ApplicationStatus } from "@/lib/application-types"
+import { notifyRenterApproved } from "@/lib/notify-renter"
 
 export async function updateApplicationStatus(applicationId: string, newStatus: ApplicationStatus) {
   const [session, scope] = await Promise.all([getSession(), getCallerScope()])
@@ -63,6 +64,10 @@ export async function updateApplicationStatus(applicationId: string, newStatus: 
   revalidatePath("/")
   revalidatePath("/applications")
   revalidatePath(`/applications/${applicationId}`)
+
+  if (newStatus === "approved") {
+    await notifyRenterApproved(applicationId)
+  }
 
   return { ok: true as const }
 }

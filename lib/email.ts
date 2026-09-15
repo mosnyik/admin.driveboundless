@@ -5,6 +5,10 @@ import { Resend } from "resend"
 const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL?.trim() || "onboarding@resend.dev"
 const DEFAULT_FROM_NAME = "Drive Boundless"
 
+/** Where renter-facing emails that invite a reply (confirmation, agreement)
+ * should route responses, since FROM_ADDRESS is a send-only address. */
+export const RENTER_REPLY_TO_EMAIL = "info@driveboundless.com"
+
 let client: Resend | null = null
 
 function getClient() {
@@ -29,6 +33,7 @@ interface SendEmailInput {
   /** Display name shown before the address, e.g. "New Rental Alert". Defaults to "Drive Boundless". */
   fromName?: string
   attachments?: Array<{ filename: string; content: Buffer }>
+  replyTo?: string
 }
 
 export async function sendEmail({
@@ -38,6 +43,7 @@ export async function sendEmail({
   text,
   attachments,
   fromName = DEFAULT_FROM_NAME,
+  replyTo,
 }: SendEmailInput) {
   const resend = getClient()
 
@@ -48,6 +54,7 @@ export async function sendEmail({
     html,
     text,
     attachments,
+    replyTo,
   })
 
   if (error) {
