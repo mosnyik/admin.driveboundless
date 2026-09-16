@@ -49,7 +49,7 @@ function wrapper(bodyHtml: string) {
 }
 
 function button(label: string, href: string) {
-  return `<a href="${href}" style="display:inline-block;background-color:#000000;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px;font-weight:600;">${escapeHtml(label)}</a>`
+  return `<a href="${href}" style="display:inline-block;background-color:#AD524D;color:#FAF8F5;text-decoration:none;padding:12px 24px;border-radius:6px;font-family:Arial,sans-serif;font-size:14px;font-weight:600;">${escapeHtml(label)}</a>`
 }
 
 interface NewApplicationEmailInput {
@@ -73,9 +73,9 @@ export function newApplicationAlertEmail(input: NewApplicationEmailInput) {
       A new application just came in and needs a response.
     </p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;font-size:14px;margin-bottom:24px;">
-      <tr><td style="padding:6px 0;color:#8a8375;">Renter</td><td style="padding:6px 0;text-align:right;font-weight:600;">${escapeHtml(input.renterName || "—")}</td></tr>
-      <tr><td style="padding:6px 0;color:#8a8375;">Email</td><td style="padding:6px 0;text-align:right;">${escapeHtml(input.renterEmail || "—")}</td></tr>
-      <tr><td style="padding:6px 0;color:#8a8375;">Phone</td><td style="padding:6px 0;text-align:right;">${escapeHtml(input.renterPhone || "—")}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8375;">Renter</td><td style="padding:6px 0;text-align:right;font-weight:600;">${escapeHtml(input.renterName || "N/A")}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8375;">Email</td><td style="padding:6px 0;text-align:right;">${escapeHtml(input.renterEmail || "N/A")}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8375;">Phone</td><td style="padding:6px 0;text-align:right;">${escapeHtml(input.renterPhone || "N/A")}</td></tr>
       <tr><td style="padding:6px 0;color:#8a8375;">Vehicle</td><td style="padding:6px 0;text-align:right;">${escapeHtml(input.vehicleLabel || "Not selected")}</td></tr>
       <tr><td style="padding:6px 0;color:#8a8375;">Dates</td><td style="padding:6px 0;text-align:right;">${escapeHtml(dateRange)}</td></tr>
     </table>
@@ -85,9 +85,9 @@ export function newApplicationAlertEmail(input: NewApplicationEmailInput) {
   const text = [
     "New rental application",
     "",
-    `Renter: ${input.renterName || "—"}`,
-    `Email: ${input.renterEmail || "—"}`,
-    `Phone: ${input.renterPhone || "—"}`,
+    `Renter: ${input.renterName || "N/A"}`,
+    `Email: ${input.renterEmail || "N/A"}`,
+    `Phone: ${input.renterPhone || "N/A"}`,
     `Vehicle: ${input.vehicleLabel || "Not selected"}`,
     `Dates: ${dateRange}`,
     "",
@@ -95,7 +95,7 @@ export function newApplicationAlertEmail(input: NewApplicationEmailInput) {
   ].join("\n")
 
   return {
-    subject: `New rental application — ${input.renterName || "Untitled applicant"}`,
+    subject: `New rental application: ${input.renterName || "Untitled applicant"}`,
     html,
     text,
   }
@@ -120,30 +120,30 @@ export function ownerApprovalAlertEmail(input: OwnerApprovalEmailInput) {
       A rental request for one of your vehicles is waiting on your decision.
     </p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;font-size:14px;margin-bottom:24px;">
-      <tr><td style="padding:6px 0;color:#8a8375;">Renter</td><td style="padding:6px 0;text-align:right;font-weight:600;">${escapeHtml(input.renterName || "—")}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8375;">Renter</td><td style="padding:6px 0;text-align:right;font-weight:600;">${escapeHtml(input.renterName || "N/A")}</td></tr>
       <tr><td style="padding:6px 0;color:#8a8375;">Vehicle</td><td style="padding:6px 0;text-align:right;">${escapeHtml(input.vehicleLabel || "Not selected")}</td></tr>
       <tr><td style="padding:6px 0;color:#8a8375;">Dates</td><td style="padding:6px 0;text-align:right;">${escapeHtml(dateRange)}</td></tr>
     </table>
     ${button("Review & respond", reviewUrl)}
     <p style="margin:20px 0 0;color:#8a8375;font-family:Arial,sans-serif;font-size:12px;">
-      No login needed — this link is unique to this request and expires once you've responded or after 14 days.
+      No login needed: this link is unique to this request and expires once you've responded or after 14 days.
     </p>
   `)
 
   const text = [
     "New rental request",
     "",
-    `Renter: ${input.renterName || "—"}`,
+    `Renter: ${input.renterName || "N/A"}`,
     `Vehicle: ${input.vehicleLabel || "Not selected"}`,
     `Dates: ${dateRange}`,
     "",
     `Review & respond: ${reviewUrl}`,
     "",
-    "No login needed — this link is unique to this request and expires once you've responded or after 14 days.",
+    "No login needed: this link is unique to this request and expires once you've responded or after 14 days.",
   ].join("\n")
 
   return {
-    subject: `Rental request needs your decision — ${input.renterName || "Untitled applicant"}`,
+    subject: `Rental request needs your decision: ${input.renterName || "Untitled applicant"}`,
     html,
     text,
   }
@@ -170,8 +170,11 @@ export function bookingConfirmationEmail(input: BookingConfirmationEmailInput) {
       <tr><td style="padding:6px 0;color:#8a8375;">Vehicle</td><td style="padding:6px 0;text-align:right;">${escapeHtml(input.vehicleLabel || "Not selected")}</td></tr>
       <tr><td style="padding:6px 0;color:#8a8375;">Dates</td><td style="padding:6px 0;text-align:right;">${escapeHtml(dateRange)}</td></tr>
     </table>
+    <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      ${input.agreementAttached ? "Your rental agreement is attached." : "Your rental agreement will follow separately."} If you have any questions/concerns please reply to this email.
+    </p>
     <p style="margin:0;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
-      ${input.agreementAttached ? "Your rental agreement is attached." : "Your rental agreement will follow separately."} If anything looks off, just reply to this email.
+      Thanks
     </p>
   `)
 
@@ -183,11 +186,13 @@ export function bookingConfirmationEmail(input: BookingConfirmationEmailInput) {
     `Vehicle: ${input.vehicleLabel || "Not selected"}`,
     `Dates: ${dateRange}`,
     "",
-    `${input.agreementAttached ? "Your rental agreement is attached." : "Your rental agreement will follow separately."} If anything looks off, just reply to this email.`,
+    `${input.agreementAttached ? "Your rental agreement is attached." : "Your rental agreement will follow separately."} If you have any questions/concerns please reply to this email.`,
+    "",
+    "Thanks",
   ].join("\n")
 
   return {
-    subject: "You're confirmed — Drive Boundless rental",
+    subject: "You're confirmed: Drive Boundless rental",
     html,
     text,
   }
@@ -201,16 +206,19 @@ interface AgreementEmailInput {
 export function agreementEmail(input: AgreementEmailInput) {
   const html = wrapper(`
     <h1 style="margin:0 0 4px;font-size:22px;">Your rental agreement</h1>
-    <p style="margin:0 0 20px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
-      Hi ${escapeHtml(input.renterName || "there")}, attached is your current rental agreement${
+    <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Hi ${escapeHtml(input.renterName || "there")}, your rental agreement is attached${
         input.vehicleLabel ? ` for the ${escapeHtml(input.vehicleLabel)}` : ""
-      }. Please keep a copy for your records. If anything looks off, just reply to this email.
+      }. Please keep a copy for your records. If you have any questions/concerns please reply to this email.
+    </p>
+    <p style="margin:0;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Thanks
     </p>
   `)
 
-  const text = `Hi ${input.renterName || "there"},\n\nAttached is your current rental agreement${
+  const text = `Hi ${input.renterName || "there"}, your rental agreement is attached${
     input.vehicleLabel ? ` for the ${input.vehicleLabel}` : ""
-  }. Please keep a copy for your records. If anything looks off, just reply to this email.`
+  }. Please keep a copy for your records. If you have any questions/concerns please reply to this email.\n\nThanks`
 
   return {
     subject: "Your Drive Boundless rental agreement",
