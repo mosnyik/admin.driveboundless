@@ -41,7 +41,7 @@ export async function updateApplicationStatus(applicationId: string, newStatus: 
 
   if (newStatus === "approved" && needsInsuranceProof(current.insurance)) {
     throw new Error(
-      "Add the insurance carrier and policy number before approving, unless the renter declined insurance.",
+      "This renter chose to buy coverage through RentalCover.com — add the carrier and policy number before approving.",
     )
   }
 

@@ -20,10 +20,14 @@ export function declinedInsurance(insurance: ApplicationInsurance | null | undef
 }
 
 /** Whether a carrier + policy number still need to be collected before this
- * application can be approved — false once either is on file, or once the
- * renter explicitly declined coverage and accepted the risk themselves. */
+ * application can be approved. Only gates renters who chose to buy
+ * short-term coverage through RentalCover.com before pickup and haven't
+ * provided that policy yet — renters who already have their own insurance,
+ * or who explicitly declined coverage, can be approved without it. */
 export function needsInsuranceProof(insurance: ApplicationInsurance | null | undefined) {
-  return !hasInsuranceProof(insurance) && !declinedInsurance(insurance)
+  const choseRentalCover =
+    insurance?.status === "none" && insurance?.noInsuranceAcknowledgment === "rentalcover"
+  return choseRentalCover && !hasInsuranceProof(insurance)
 }
 
 /** Human-readable summary of the renter's insurance choice, for the
