@@ -6,11 +6,13 @@ import { ArrowLeft, ArrowRight, Download, FileCheck2, FileX2 } from "lucide-reac
 import { getCallerScope } from "@/lib/auth"
 import { getApplicationById } from "@/lib/applications"
 import { getVehicleOptions } from "@/lib/vehicles"
+import { describeInsuranceChoice, needsInsuranceProof, declinedInsurance } from "@/lib/application-types"
 import { STATUS_CONFIG } from "@/components/admin/status-badge"
 import { StatusMenu } from "@/components/admin/status-menu"
 import { WaitingFlag } from "@/components/admin/waiting-flag"
 import { VehicleChangeDialog } from "@/components/admin/vehicle-change-dialog"
 import { SendAgreementButton } from "@/components/admin/send-agreement-button"
+import { InsuranceForm } from "@/components/admin/insurance-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -169,10 +171,40 @@ export default async function ApplicationDetailPage({
                 <p className="mt-0.5 text-sm text-foreground">Not provided</p>
               )}
             </div>
-            {(insurance?.carrier || insurance?.policyNumber) && (
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-lg">Insurance</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Field label="Renter's choice" value={describeInsuranceChoice(insurance)} />
+            {insurance?.decisionAt && (
+              <p className="text-xs text-muted-foreground">
+                Recorded{" "}
+                <span suppressHydrationWarning>
+                  {formatDate(insurance.decisionAt, "MMMM d, yyyy 'at' h:mm a")}
+                </span>
+              </p>
+            )}
+
+            {declinedInsurance(insurance) ? (
+              <p className="text-sm text-muted-foreground">
+                Renter declined insurance — no carrier or policy number is needed.
+              </p>
+            ) : (
               <>
-                <Field label="Insurance carrier" value={insurance.carrier} />
-                <Field label="Policy number" value={insurance.policyNumber} />
+                {needsInsuranceProof(insurance) && (
+                  <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                    Needed before this application can be approved.
+                  </p>
+                )}
+                <InsuranceForm
+                  applicationId={application.id}
+                  initialCarrier={insurance?.carrier ?? ""}
+                  initialPolicyNumber={insurance?.policyNumber ?? ""}
+                />
               </>
             )}
           </CardContent>

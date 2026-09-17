@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache"
 import { getCallerScope, getSession } from "@/lib/auth"
 import { sanityFetch, sanityMutate } from "@/lib/sanity"
-import { APPLICATION_STATUSES, type ApplicationStatus } from "@/lib/application-types"
+import {
+  APPLICATION_STATUSES,
+  needsInsuranceProof,
+  type ApplicationInsurance,
+  type ApplicationStatus,
+} from "@/lib/application-types"
 import { notifyRenterApproved } from "@/lib/notify-renter"
 
 export async function updateApplicationStatus(applicationId: string, newStatus: ApplicationStatus) {
@@ -17,8 +22,12 @@ export async function updateApplicationStatus(applicationId: string, newStatus: 
     throw new Error("Invalid status.")
   }
 
-  const current = await sanityFetch<{ status: ApplicationStatus; companyId: string | null } | null>(
-    `*[_id == $id][0]{status, "companyId": selectedVehicle.vehicle->company->_id}`,
+  const current = await sanityFetch<{
+    status: ApplicationStatus
+    companyId: string | null
+    insurance: ApplicationInsurance | null
+  } | null>(
+    `*[_id == $id][0]{status, "companyId": selectedVehicle.vehicle->company->_id, insurance}`,
     { id: applicationId },
   )
 
@@ -28,6 +37,12 @@ export async function updateApplicationStatus(applicationId: string, newStatus: 
 
   if (scope.role === "owner" && current.companyId !== scope.companyId) {
     throw new Error("You can only update bookings for your own company.")
+  }
+
+  if (newStatus === "approved" && needsInsuranceProof(current.insurance)) {
+    throw new Error(
+      "Add the insurance carrier and policy number before approving, unless the renter declined insurance.",
+    )
   }
 
   if (current.status === newStatus) {

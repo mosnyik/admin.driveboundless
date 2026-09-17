@@ -2,7 +2,7 @@ import "server-only"
 
 import { createHash, randomBytes } from "crypto"
 import { sanityFetch, sanityMutate } from "@/lib/sanity"
-import { isTerminalStatus, type ApplicationStatus } from "@/lib/application-types"
+import { isTerminalStatus, type ApplicationInsurance, type ApplicationStatus } from "@/lib/application-types"
 
 /** How long a mailed approval link stays valid before an owner has to ask
  * the admin to resend the alert (which issues a fresh token). */
@@ -20,6 +20,7 @@ export interface OwnerApprovalRecord {
   startDate: string | null
   endDate: string | null
   companyName: string | null
+  insurance: ApplicationInsurance | null
   tokenHash: string
   expiresAt: string
   usedAt: string | null
@@ -34,6 +35,7 @@ const tokenQuery = `*[_type == "rentalApplication" && ownerApprovalToken.tokenHa
   "startDate": rental.startDate,
   "endDate": rental.endDate,
   "companyName": selectedVehicle.vehicle->company->name,
+  insurance,
   "tokenHash": ownerApprovalToken.tokenHash,
   "expiresAt": ownerApprovalToken.expiresAt,
   "usedAt": ownerApprovalToken.usedAt,

@@ -1,5 +1,55 @@
 export type ApplicationStatus = "new" | "contacted" | "approved" | "declined"
 
+export type InsuranceStatus = "has" | "none"
+export type NoInsuranceAcknowledgment = "rentalcover" | "declined"
+
+export interface ApplicationInsurance {
+  status?: InsuranceStatus
+  carrier?: string
+  policyNumber?: string
+  noInsuranceAcknowledgment?: NoInsuranceAcknowledgment
+  decisionAt?: string
+}
+
+export function hasInsuranceProof(insurance: ApplicationInsurance | null | undefined) {
+  return Boolean(insurance?.carrier && insurance?.policyNumber)
+}
+
+export function declinedInsurance(insurance: ApplicationInsurance | null | undefined) {
+  return insurance?.status === "none" && insurance?.noInsuranceAcknowledgment === "declined"
+}
+
+/** Whether a carrier + policy number still need to be collected before this
+ * application can be approved — false once either is on file, or once the
+ * renter explicitly declined coverage and accepted the risk themselves. */
+export function needsInsuranceProof(insurance: ApplicationInsurance | null | undefined) {
+  return !hasInsuranceProof(insurance) && !declinedInsurance(insurance)
+}
+
+/** Human-readable summary of the renter's insurance choice, for the
+ * application detail view and the booking confirmation email. */
+export function describeInsuranceChoice(insurance: ApplicationInsurance | null | undefined): string {
+  if (insurance?.status === "has") {
+    return hasInsuranceProof(insurance)
+      ? `${insurance.carrier} - Policy #${insurance.policyNumber}`
+      : "Has own insurance (carrier and policy number pending)"
+  }
+
+  if (insurance?.status === "none") {
+    if (insurance.noInsuranceAcknowledgment === "rentalcover") {
+      return hasInsuranceProof(insurance)
+        ? `Obtained short-term coverage through RentalCover.com: ${insurance.carrier} - Policy #${insurance.policyNumber}`
+        : "No policy at booking — chose to get short-term coverage through RentalCover.com before pickup"
+    }
+    if (insurance.noInsuranceAcknowledgment === "declined") {
+      return "Declined coverage — proceeding without insurance"
+    }
+    return "No insurance (response pending)"
+  }
+
+  return "Not indicated"
+}
+
 export const APPLICATION_STATUSES: ApplicationStatus[] = ["new", "contacted", "approved", "declined"]
 
 export type ApplicationBucket = "needs-attention" | "in-progress" | "completed"
@@ -94,10 +144,7 @@ export interface ApplicationDetail {
     fileUrl: string | null
     fileName: string | null
   }
-  insurance: {
-    carrier?: string
-    policyNumber?: string
-  }
+  insurance: ApplicationInsurance
   rental: {
     purpose: string
     startDate: string

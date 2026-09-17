@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { sanityMutate } from "@/lib/sanity"
-import type { ApplicationStatus } from "@/lib/application-types"
+import { needsInsuranceProof, type ApplicationStatus } from "@/lib/application-types"
 import {
   getByOwnerApprovalToken,
   isOwnerApprovalTokenExpired,
@@ -22,8 +22,9 @@ export async function submitOwnerDecision(token: string, decision: ApplicationSt
   }
 
   const record = await getByOwnerApprovalToken(token)
+  const blockedByInsurance = decision === "approved" && needsInsuranceProof(record?.insurance)
 
-  if (record && !isOwnerApprovalTokenExpired(record) && !isOwnerApprovalTokenSettled(record)) {
+  if (record && !isOwnerApprovalTokenExpired(record) && !isOwnerApprovalTokenSettled(record) && !blockedByInsurance) {
     const now = new Date().toISOString()
     const changedBy = record.companyName
       ? `${record.companyName} (via approval email)`

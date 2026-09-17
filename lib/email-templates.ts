@@ -1,5 +1,7 @@
 import "server-only"
 
+import { describeInsuranceChoice, type ApplicationInsurance } from "@/lib/application-types"
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -151,24 +153,65 @@ export function ownerApprovalAlertEmail(input: OwnerApprovalEmailInput) {
 
 interface BookingConfirmationEmailInput {
   renterName: string
+  renterPhone: string
+  renterEmail: string
+  renterAddress: { street: string; city: string; state: string; zip: string } | null
   vehicleLabel: string | null
   startDate: string | null
+  startTime: string | null
   endDate: string | null
+  endTime: string | null
+  rentalPurpose: string | null
+  paymentDueDay: string | null
+  mileageAllowance: string | null
+  insurance: ApplicationInsurance | null
+  additionalDrivers: Array<{ name: string }> | null
   agreementAttached: boolean
 }
 
+function formatMileageAllowance(value: string | null) {
+  if (!value) return "Not specified"
+  return value === "unlimited" ? "Unlimited" : `${value} miles/week`
+}
+
 export function bookingConfirmationEmail(input: BookingConfirmationEmailInput) {
-  const dateRange =
-    input.startDate && input.endDate ? `${input.startDate} – ${input.endDate}` : "Not specified"
+  const pickup = input.startDate ? `${input.startDate}${input.startTime ? ` at ${input.startTime}` : ""}` : "Not specified"
+  const returnBy = input.endDate ? `${input.endDate}${input.endTime ? ` at ${input.endTime}` : ""}` : "Not specified"
+  const address = input.renterAddress
+    ? [input.renterAddress.street, input.renterAddress.city, input.renterAddress.state, input.renterAddress.zip]
+        .filter(Boolean)
+        .join(", ")
+    : ""
+  const insuranceSummary = describeInsuranceChoice(input.insurance)
+  const driverNames = (input.additionalDrivers ?? []).map((driver) => driver.name).filter(Boolean)
+
+  const rows: Array<[string, string]> = [
+    ["Vehicle", input.vehicleLabel || "Not selected"],
+    ["Pick-up", pickup],
+    ["Return", returnBy],
+    ["Rental purpose", input.rentalPurpose || "Not specified"],
+    ["Payment due day", input.paymentDueDay || "Not specified"],
+    ["Mileage allowance", formatMileageAllowance(input.mileageAllowance)],
+    ["Insurance", insuranceSummary],
+    ...(driverNames.length > 0 ? ([["Additional drivers", driverNames.join(", ")]] as Array<[string, string]>) : []),
+    ["Renter", input.renterName || "Not provided"],
+    ["Phone", input.renterPhone || "Not provided"],
+    ["Email", input.renterEmail || "Not provided"],
+    ...(address ? ([["Address", address]] as Array<[string, string]>) : []),
+  ]
 
   const html = wrapper(`
     <h1 style="margin:0 0 4px;font-size:22px;">You're confirmed!</h1>
     <p style="margin:0 0 24px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
-      Hi ${escapeHtml(input.renterName || "there")}, your rental request has been approved. Here are the details:
+      Hi ${escapeHtml(input.renterName || "there")}, your rental request has been approved. Here's a summary of your booking:
     </p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;font-size:14px;margin-bottom:24px;">
-      <tr><td style="padding:6px 0;color:#8a8375;">Vehicle</td><td style="padding:6px 0;text-align:right;">${escapeHtml(input.vehicleLabel || "Not selected")}</td></tr>
-      <tr><td style="padding:6px 0;color:#8a8375;">Dates</td><td style="padding:6px 0;text-align:right;">${escapeHtml(dateRange)}</td></tr>
+      ${rows
+        .map(
+          ([label, value]) =>
+            `<tr><td style="padding:6px 0;color:#8a8375;vertical-align:top;">${escapeHtml(label)}</td><td style="padding:6px 0;text-align:right;">${escapeHtml(value)}</td></tr>`,
+        )
+        .join("")}
     </table>
     <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
       ${input.agreementAttached ? "Your rental agreement is attached." : "Your rental agreement will follow separately."} If you have any questions/concerns please reply to this email.
@@ -181,10 +224,9 @@ export function bookingConfirmationEmail(input: BookingConfirmationEmailInput) {
   const text = [
     "You're confirmed!",
     "",
-    `Hi ${input.renterName || "there"}, your rental request has been approved. Here are the details:`,
+    `Hi ${input.renterName || "there"}, your rental request has been approved. Here's a summary of your booking:`,
     "",
-    `Vehicle: ${input.vehicleLabel || "Not selected"}`,
-    `Dates: ${dateRange}`,
+    ...rows.map(([label, value]) => `${label}: ${value}`),
     "",
     `${input.agreementAttached ? "Your rental agreement is attached." : "Your rental agreement will follow separately."} If you have any questions/concerns please reply to this email.`,
     "",
@@ -222,6 +264,35 @@ export function agreementEmail(input: AgreementEmailInput) {
 
   return {
     subject: "Your Drive Boundless rental agreement",
+    html,
+    text,
+  }
+}
+
+interface AgreementUpdatedEmailInput {
+  renterName: string
+  vehicleLabel: string | null
+}
+
+export function agreementUpdatedEmail(input: AgreementUpdatedEmailInput) {
+  const html = wrapper(`
+    <h1 style="margin:0 0 4px;font-size:22px;">Your rental agreement has been updated</h1>
+    <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Hi ${escapeHtml(input.renterName || "there")}, your rental agreement${
+        input.vehicleLabel ? ` for the ${escapeHtml(input.vehicleLabel)}` : ""
+      } has been updated to include your insurance information. The updated agreement is attached — please keep a copy for your records. If you have any questions/concerns please reply to this email.
+    </p>
+    <p style="margin:0;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Thanks
+    </p>
+  `)
+
+  const text = `Hi ${input.renterName || "there"}, your rental agreement${
+    input.vehicleLabel ? ` for the ${input.vehicleLabel}` : ""
+  } has been updated to include your insurance information. The updated agreement is attached — please keep a copy for your records. If you have any questions/concerns please reply to this email.\n\nThanks`
+
+  return {
+    subject: "Your Drive Boundless rental agreement has been updated",
     html,
     text,
   }

@@ -3,13 +3,23 @@ import "server-only"
 import { sanityFetch, sanityMutate } from "@/lib/sanity"
 import { sendEmail, RENTER_REPLY_TO_EMAIL } from "@/lib/email"
 import { bookingConfirmationEmail } from "@/lib/email-templates"
+import type { ApplicationInsurance } from "@/lib/application-types"
 
 interface ApplicationForConfirmation {
   renterName: string
   renterEmail: string
+  renterPhone: string
+  renterAddress: { street: string; city: string; state: string; zip: string } | null
   vehicleLabel: string | null
   startDate: string | null
+  startTime: string | null
   endDate: string | null
+  endTime: string | null
+  rentalPurpose: string | null
+  paymentDueDay: string | null
+  mileageAllowance: string | null
+  insurance: ApplicationInsurance | null
+  additionalDrivers: Array<{ name: string }> | null
   confirmationEmailSentAt: string | null
   /** The most recent vehicle change's agreement, or the original if there's
    * been no vehicle change — same source send-agreement.ts uses. */
@@ -19,9 +29,18 @@ interface ApplicationForConfirmation {
 const applicationQuery = `*[_id == $id][0]{
   "renterName": renter.fullName,
   "renterEmail": renter.email,
+  "renterPhone": renter.phone,
+  "renterAddress": renter.address,
   "vehicleLabel": selectedVehicle.label,
   "startDate": rental.startDate,
+  "startTime": rental.startTime,
   "endDate": rental.endDate,
+  "endTime": rental.endTime,
+  "rentalPurpose": rental.purpose,
+  "paymentDueDay": rental.paymentDueDay,
+  "mileageAllowance": rental.mileageAllowance,
+  insurance,
+  additionalDrivers[]{name},
   confirmationEmailSentAt,
   "activeAgreementPdfUrl": coalesce(currentAgreement.pdf.asset->url, agreement.pdf.asset->url)
 }`
@@ -62,9 +81,19 @@ export async function notifyRenterApproved(applicationId: string) {
 
     const email = bookingConfirmationEmail({
       renterName: application.renterName,
+      renterPhone: application.renterPhone,
+      renterEmail: application.renterEmail,
+      renterAddress: application.renterAddress,
       vehicleLabel: application.vehicleLabel,
       startDate: application.startDate,
+      startTime: application.startTime,
       endDate: application.endDate,
+      endTime: application.endTime,
+      rentalPurpose: application.rentalPurpose,
+      paymentDueDay: application.paymentDueDay,
+      mileageAllowance: application.mileageAllowance,
+      insurance: application.insurance,
+      additionalDrivers: application.additionalDrivers,
       agreementAttached: Boolean(attachments),
     })
 

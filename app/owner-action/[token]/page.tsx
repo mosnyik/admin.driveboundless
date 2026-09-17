@@ -5,6 +5,7 @@ import { CheckCircle2, Clock, ShieldCheck, XCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { needsInsuranceProof } from "@/lib/application-types"
 import {
   getByOwnerApprovalToken,
   isOwnerApprovalTokenExpired,
@@ -130,6 +131,7 @@ export default async function OwnerActionPage({
     record.startDate && record.endDate
       ? `${formatDate(record.startDate)} – ${formatDate(record.endDate)}`
       : "Not specified"
+  const insurancePending = needsInsuranceProof(record.insurance)
 
   return (
     <Shell>
@@ -164,12 +166,25 @@ export default async function OwnerActionPage({
                 Decline
               </Button>
             </form>
-            <form action={submitOwnerDecision.bind(null, token, "approved")}>
-              <Button type="submit" className="w-full bg-success text-success-foreground hover:bg-success/90">
+            {insurancePending ? (
+              <Button type="button" disabled className="w-full">
                 Approve
               </Button>
-            </form>
+            ) : (
+              <form action={submitOwnerDecision.bind(null, token, "approved")}>
+                <Button type="submit" className="w-full bg-success text-success-foreground hover:bg-success/90">
+                  Approve
+                </Button>
+              </form>
+            )}
           </div>
+
+          {insurancePending && (
+            <p className="text-center text-xs text-muted-foreground">
+              This booking can&apos;t be approved yet — Drive Boundless is still waiting on the renter&apos;s
+              insurance verification.
+            </p>
+          )}
 
           <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <ShieldCheck className="size-3.5" />
