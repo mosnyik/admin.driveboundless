@@ -240,6 +240,61 @@ export function bookingConfirmationEmail(input: BookingConfirmationEmailInput) {
   }
 }
 
+interface ApplicationDeclinedEmailInput {
+  renterName: string
+  vehicleLabel: string | null
+}
+
+export function applicationDeclinedEmail(input: ApplicationDeclinedEmailInput) {
+  const vehiclePhraseHtml = input.vehicleLabel ? ` for the ${escapeHtml(input.vehicleLabel)}` : ""
+  const vehiclePhraseText = input.vehicleLabel ? ` for the ${input.vehicleLabel}` : ""
+
+  const html = wrapper(`
+    <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Dear ${escapeHtml(input.renterName || "Renter")},
+    </p>
+    <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Thank you for your interest in renting with Driveboundless and for taking the time to submit your application${vehiclePhraseHtml}.
+    </p>
+    <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      After reviewing your application, we regret to inform you that your rental request process cannot be completed at this time. We understand this may be disappointing and appreciate your understanding.
+    </p>
+    <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      If you have any questions about your application, please contact us at info@driveboundless.com.
+    </p>
+    <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Thank you again for considering Driveboundless.
+    </p>
+    <p style="margin:0;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Kind regards,<br />
+      Driveboundless<br />
+      Rental Support Team
+    </p>
+  `)
+
+  const text = [
+    `Dear ${input.renterName || "Renter"},`,
+    "",
+    `Thank you for your interest in renting with Driveboundless and for taking the time to submit your application${vehiclePhraseText}.`,
+    "",
+    "After reviewing your application, we regret to inform you that your rental request process cannot be completed at this time. We understand this may be disappointing and appreciate your understanding.",
+    "",
+    "If you have any questions about your application, please contact us at info@driveboundless.com.",
+    "",
+    "Thank you again for considering Driveboundless.",
+    "",
+    "Kind regards,",
+    "Driveboundless",
+    "Rental Support Team",
+  ].join("\n")
+
+  return {
+    subject: "Update on your Drive Boundless rental application",
+    html,
+    text,
+  }
+}
+
 interface AgreementEmailInput {
   renterName: string
   vehicleLabel: string | null

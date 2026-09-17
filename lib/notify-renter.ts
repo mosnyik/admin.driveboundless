@@ -2,7 +2,7 @@ import "server-only"
 
 import { sanityFetch, sanityMutate } from "@/lib/sanity"
 import { sendEmail, RENTER_REPLY_TO_EMAIL } from "@/lib/email"
-import { bookingConfirmationEmail } from "@/lib/email-templates"
+import { bookingConfirmationEmail, applicationDeclinedEmail } from "@/lib/email-templates"
 import type { ApplicationInsurance } from "@/lib/application-types"
 
 interface ApplicationForConfirmation {
@@ -136,6 +136,63 @@ export async function notifyRenterApproved(applicationId: string) {
     return { ok: true as const, skipped: false }
   } catch (error) {
     console.error("Failed to send renter booking-confirmation email", error)
+    return { ok: false as const, error }
+  }
+}
+
+interface ApplicationForDecline {
+  renterName: string
+  renterEmail: string
+  vehicleLabel: string | null
+  declineEmailSentAt: string | null
+}
+
+const declineQuery = `*[_id == $id][0]{
+  "renterName": renter.fullName,
+  "renterEmail": renter.email,
+  "vehicleLabel": selectedVehicle.label,
+  declineEmailSentAt
+}`
+
+/** Emails the renter once their application is declined. Called from both
+ * places that can record a "declined" decision (the admin/owner status menu
+ * and the mailed one-click owner-approval link), mirroring notifyRenterApproved.
+ * Idempotent via declineEmailSentAt, and never throws — a failed send
+ * shouldn't block the decline itself. */
+export async function notifyRenterDeclined(applicationId: string) {
+  try {
+    const application = await sanityFetch<ApplicationForDecline>(declineQuery, {
+      id: applicationId,
+    })
+
+    if (!application || application.declineEmailSentAt) {
+      return { ok: true as const, skipped: true }
+    }
+
+    if (!application.renterEmail) {
+      return { ok: true as const, skipped: true }
+    }
+
+    const email = applicationDeclinedEmail({
+      renterName: application.renterName,
+      vehicleLabel: application.vehicleLabel,
+    })
+
+    await sendEmail({
+      to: application.renterEmail,
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+      replyTo: RENTER_REPLY_TO_EMAIL,
+    })
+
+    await sanityMutate([
+      { patch: { id: applicationId, set: { declineEmailSentAt: new Date().toISOString() } } },
+    ])
+
+    return { ok: true as const, skipped: false }
+  } catch (error) {
+    console.error("Failed to send renter decline email", error)
     return { ok: false as const, error }
   }
 }

@@ -46,7 +46,7 @@ export function describeInsuranceChoice(insurance: ApplicationInsurance | null |
         : "No policy at booking — chose to get short-term coverage through RentalCover.com before pickup"
     }
     if (insurance.noInsuranceAcknowledgment === "declined") {
-      return "Declined coverage — proceeding without insurance"
+      return "Declined liability coverage"
     }
     return "No insurance (response pending)"
   }

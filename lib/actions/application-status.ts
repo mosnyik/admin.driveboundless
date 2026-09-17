@@ -9,7 +9,7 @@ import {
   type ApplicationInsurance,
   type ApplicationStatus,
 } from "@/lib/application-types"
-import { notifyRenterApproved } from "@/lib/notify-renter"
+import { notifyRenterApproved, notifyRenterDeclined } from "@/lib/notify-renter"
 
 export async function updateApplicationStatus(applicationId: string, newStatus: ApplicationStatus) {
   const [session, scope] = await Promise.all([getSession(), getCallerScope()])
@@ -82,6 +82,8 @@ export async function updateApplicationStatus(applicationId: string, newStatus: 
 
   if (newStatus === "approved") {
     await notifyRenterApproved(applicationId)
+  } else if (newStatus === "declined") {
+    await notifyRenterDeclined(applicationId)
   }
 
   return { ok: true as const }

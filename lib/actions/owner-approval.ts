@@ -9,7 +9,7 @@ import {
   isOwnerApprovalTokenExpired,
   isOwnerApprovalTokenSettled,
 } from "@/lib/owner-approval"
-import { notifyRenterApproved } from "@/lib/notify-renter"
+import { notifyRenterApproved, notifyRenterDeclined } from "@/lib/notify-renter"
 
 /** Records the decision made from a mailed single-use link, then redirects
  * back to the same link — which now renders the "already recorded" state.
@@ -67,6 +67,8 @@ export async function submitOwnerDecision(token: string, decision: ApplicationSt
 
     if (decision === "approved") {
       await notifyRenterApproved(record.applicationId)
+    } else {
+      await notifyRenterDeclined(record.applicationId)
     }
   }
 
