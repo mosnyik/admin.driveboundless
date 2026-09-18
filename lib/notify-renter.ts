@@ -2,8 +2,12 @@ import "server-only"
 
 import { sanityFetch, sanityMutate } from "@/lib/sanity"
 import { sendEmail, RENTER_REPLY_TO_EMAIL } from "@/lib/email"
-import { bookingConfirmationEmail, applicationDeclinedEmail } from "@/lib/email-templates"
+import { bookingConfirmationEmail, applicationDeclinedEmail, type EmailCompany } from "@/lib/email-templates"
 import type { ApplicationInsurance } from "@/lib/application-types"
+
+interface ApplicationCompany extends EmailCompany {
+  email: string
+}
 
 interface ApplicationForConfirmation {
   renterName: string
@@ -24,6 +28,7 @@ interface ApplicationForConfirmation {
   /** The most recent vehicle change's agreement, or the original if there's
    * been no vehicle change — same source send-agreement.ts uses. */
   activeAgreementPdfUrl: string | null
+  company: ApplicationCompany | null
 }
 
 const applicationQuery = `*[_id == $id][0]{
@@ -42,7 +47,8 @@ const applicationQuery = `*[_id == $id][0]{
   insurance,
   additionalDrivers[]{name},
   confirmationEmailSentAt,
-  "activeAgreementPdfUrl": coalesce(currentAgreement.pdf.asset->url, agreement.pdf.asset->url)
+  "activeAgreementPdfUrl": coalesce(currentAgreement.pdf.asset->url, agreement.pdf.asset->url),
+  "company": selectedVehicle.vehicle->company->{"legalName": name, dbaName, email}
 }`
 
 /** Emails the renter once their application is approved, attaching the
@@ -95,6 +101,7 @@ export async function notifyRenterApproved(applicationId: string) {
       insurance: application.insurance,
       additionalDrivers: application.additionalDrivers,
       agreementAttached: Boolean(attachments),
+      company: application.company ?? undefined,
     })
 
     await sendEmail({
@@ -102,7 +109,7 @@ export async function notifyRenterApproved(applicationId: string) {
       subject: email.subject,
       html: email.html,
       text: email.text,
-      replyTo: RENTER_REPLY_TO_EMAIL,
+      replyTo: application.company?.email || RENTER_REPLY_TO_EMAIL,
       attachments,
     })
 
@@ -145,13 +152,15 @@ interface ApplicationForDecline {
   renterEmail: string
   vehicleLabel: string | null
   declineEmailSentAt: string | null
+  company: ApplicationCompany | null
 }
 
 const declineQuery = `*[_id == $id][0]{
   "renterName": renter.fullName,
   "renterEmail": renter.email,
   "vehicleLabel": selectedVehicle.label,
-  declineEmailSentAt
+  declineEmailSentAt,
+  "company": selectedVehicle.vehicle->company->{"legalName": name, dbaName, email}
 }`
 
 /** Emails the renter once their application is declined. Called from both
@@ -173,9 +182,13 @@ export async function notifyRenterDeclined(applicationId: string) {
       return { ok: true as const, skipped: true }
     }
 
+    const contactEmail = application.company?.email || RENTER_REPLY_TO_EMAIL
+
     const email = applicationDeclinedEmail({
       renterName: application.renterName,
       vehicleLabel: application.vehicleLabel,
+      contactEmail,
+      company: application.company ?? undefined,
     })
 
     await sendEmail({
@@ -183,7 +196,7 @@ export async function notifyRenterDeclined(applicationId: string) {
       subject: email.subject,
       html: email.html,
       text: email.text,
-      replyTo: RENTER_REPLY_TO_EMAIL,
+      replyTo: contactEmail,
     })
 
     await sanityMutate([

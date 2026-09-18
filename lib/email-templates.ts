@@ -15,7 +15,23 @@ function getAppUrl() {
   return (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "")
 }
 
-function wrapper(bodyHtml: string) {
+export interface EmailCompany {
+  legalName: string
+  dbaName?: string
+}
+
+/** Letterhead brand/footer for renter-facing emails that should carry the
+ * vehicle's actual owner company rather than always saying Drive Boundless.
+ * Internal/admin-facing email builders don't pass this, so they keep the
+ * default Drive Boundless letterhead. */
+function wrapper(bodyHtml: string, company?: EmailCompany) {
+  const brandName = company ? company.dbaName ?? company.legalName : "Drive Boundless"
+  const footerText = company
+    ? company.dbaName
+      ? `${escapeHtml(company.dbaName)} &middot; ${escapeHtml(company.legalName)}`
+      : escapeHtml(company.legalName)
+    : "Drive Boundless Auto Solutions &middot; Turchese Solutions LLC"
+
   return `<!doctype html>
 <html>
 <head>
@@ -29,7 +45,7 @@ function wrapper(bodyHtml: string) {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e7e2d6;">
           <tr>
             <td style="background-color:#000000;padding:24px 32px;">
-              <span style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#d4af37;font-family:Arial,sans-serif;">Drive Boundless</span>
+              <span style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#d4af37;font-family:Arial,sans-serif;">${escapeHtml(brandName)}</span>
             </td>
           </tr>
           <tr>
@@ -39,7 +55,7 @@ function wrapper(bodyHtml: string) {
           </tr>
           <tr>
             <td style="padding:20px 32px;background-color:#faf8f2;border-top:1px solid #e7e2d6;">
-              <span style="font-size:12px;color:#8a8375;font-family:Arial,sans-serif;">Drive Boundless Auto Solutions &middot; Turchese Solutions LLC</span>
+              <span style="font-size:12px;color:#8a8375;font-family:Arial,sans-serif;">${footerText}</span>
             </td>
           </tr>
         </table>
@@ -167,6 +183,7 @@ interface BookingConfirmationEmailInput {
   insurance: ApplicationInsurance | null
   additionalDrivers: Array<{ name: string }> | null
   agreementAttached: boolean
+  company?: EmailCompany
 }
 
 function formatMileageAllowance(value: string | null) {
@@ -219,7 +236,7 @@ export function bookingConfirmationEmail(input: BookingConfirmationEmailInput) {
     <p style="margin:0;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
       Thanks
     </p>
-  `)
+  `, input.company)
 
   const text = [
     "You're confirmed!",
@@ -243,48 +260,51 @@ export function bookingConfirmationEmail(input: BookingConfirmationEmailInput) {
 interface ApplicationDeclinedEmailInput {
   renterName: string
   vehicleLabel: string | null
+  contactEmail: string
+  company?: EmailCompany
 }
 
 export function applicationDeclinedEmail(input: ApplicationDeclinedEmailInput) {
   const vehiclePhraseHtml = input.vehicleLabel ? ` for the ${escapeHtml(input.vehicleLabel)}` : ""
   const vehiclePhraseText = input.vehicleLabel ? ` for the ${input.vehicleLabel}` : ""
+  const companyName = input.company ? input.company.dbaName ?? input.company.legalName : "Driveboundless"
 
   const html = wrapper(`
     <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
       Dear ${escapeHtml(input.renterName || "Renter")},
     </p>
     <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
-      Thank you for your interest in renting with Driveboundless and for taking the time to submit your application${vehiclePhraseHtml}.
+      Thank you for your interest in renting with ${escapeHtml(companyName)} and for taking the time to submit your application${vehiclePhraseHtml}.
     </p>
     <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
       After reviewing your application, we regret to inform you that your rental request process cannot be completed at this time. We understand this may be disappointing and appreciate your understanding.
     </p>
     <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
-      If you have any questions about your application, please contact us at info@driveboundless.com.
+      If you have any questions about your application, please contact us at ${escapeHtml(input.contactEmail)}.
     </p>
     <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
-      Thank you again for considering Driveboundless.
+      Thank you again for considering ${escapeHtml(companyName)}.
     </p>
     <p style="margin:0;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
       Kind regards,<br />
-      Driveboundless<br />
+      ${escapeHtml(companyName)}<br />
       Rental Support Team
     </p>
-  `)
+  `, input.company)
 
   const text = [
     `Dear ${input.renterName || "Renter"},`,
     "",
-    `Thank you for your interest in renting with Driveboundless and for taking the time to submit your application${vehiclePhraseText}.`,
+    `Thank you for your interest in renting with ${companyName} and for taking the time to submit your application${vehiclePhraseText}.`,
     "",
     "After reviewing your application, we regret to inform you that your rental request process cannot be completed at this time. We understand this may be disappointing and appreciate your understanding.",
     "",
-    "If you have any questions about your application, please contact us at info@driveboundless.com.",
+    `If you have any questions about your application, please contact us at ${input.contactEmail}.`,
     "",
-    "Thank you again for considering Driveboundless.",
+    `Thank you again for considering ${companyName}.`,
     "",
     "Kind regards,",
-    "Driveboundless",
+    companyName,
     "Rental Support Team",
   ].join("\n")
 
