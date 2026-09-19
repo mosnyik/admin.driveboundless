@@ -74,9 +74,9 @@ const DEFAULT_COMPANY: RentalAgreementCompany = {
   legalName: "Turchese Solutions LLC",
   dbaName: "Boundless Auto Solutions",
   address: "To be communicated via text or email",
-  phone: "+1 929-213-5106",
+  phone: "+1 470-458-3491",
   email: "info@turcheseconsulting.com",
-}
+};
 
 function escapeHtml(value: string) {
   return value
