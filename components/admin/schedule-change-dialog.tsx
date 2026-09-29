@@ -83,7 +83,7 @@ export function ScheduleChangeDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="w-full sm:w-auto">
+        <Button size="sm" className="w-full sm:w-auto">
           <CalendarClock className="size-4" />
           Change pick-up
         </Button>
