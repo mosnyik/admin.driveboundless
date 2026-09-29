@@ -372,3 +372,62 @@ export function agreementUpdatedEmail(input: AgreementUpdatedEmailInput) {
     text,
   }
 }
+
+interface ScheduleUpdatedEmailInput {
+  renterName: string
+  vehicleLabel: string | null
+  startDate: string
+  startTime: string
+  endDate: string
+  endTime: string
+  company?: EmailCompany
+}
+
+export function scheduleUpdatedEmail(input: ScheduleUpdatedEmailInput) {
+  const pickup = `${input.startDate}${input.startTime ? ` at ${input.startTime}` : ""}`
+  const returnBy = `${input.endDate}${input.endTime ? ` at ${input.endTime}` : ""}`
+  const rows: Array<[string, string]> = [
+    ...(input.vehicleLabel ? ([["Vehicle", input.vehicleLabel]] as Array<[string, string]>) : []),
+    ["Pick-up", pickup],
+    ["Return", returnBy],
+  ]
+
+  const html = wrapper(`
+    <h1 style="margin:0 0 4px;font-size:22px;">Your pick-up time has changed</h1>
+    <p style="margin:0 0 24px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Hi ${escapeHtml(input.renterName || "there")}, your rental schedule has been updated. Here are your new times:
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;font-size:14px;margin-bottom:24px;">
+      ${rows
+        .map(
+          ([label, value]) =>
+            `<tr><td style="padding:6px 0;color:#8a8375;vertical-align:top;">${escapeHtml(label)}</td><td style="padding:6px 0;text-align:right;">${escapeHtml(value)}</td></tr>`,
+        )
+        .join("")}
+    </table>
+    <p style="margin:0 0 16px;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      The updated rental agreement is attached — please keep a copy for your records. If you have any questions/concerns please reply to this email.
+    </p>
+    <p style="margin:0;color:#5b5548;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">
+      Thanks
+    </p>
+  `, input.company)
+
+  const text = [
+    "Your pick-up time has changed",
+    "",
+    `Hi ${input.renterName || "there"}, your rental schedule has been updated. Here are your new times:`,
+    "",
+    ...rows.map(([label, value]) => `${label}: ${value}`),
+    "",
+    "The updated rental agreement is attached — please keep a copy for your records. If you have any questions/concerns please reply to this email.",
+    "",
+    "Thanks",
+  ].join("\n")
+
+  return {
+    subject: "Your rental pick-up time has been updated",
+    html,
+    text,
+  }
+}

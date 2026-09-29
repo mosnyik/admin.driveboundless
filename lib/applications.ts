@@ -49,6 +49,17 @@ const detailQuery = `*[_type == "rentalApplication" && _id == $id][0]{
     newVehicleLabel,
     "previousAgreementPdfUrl": previousAgreementPdf.asset->url
   },
+  "scheduleChangeHistory": scheduleChangeHistory[] | order(changedAt desc){
+    changedAt,
+    changedBy,
+    previousStartDate,
+    previousStartTime,
+    newStartDate,
+    newStartTime,
+    newEndDate,
+    newEndTime,
+    "previousAgreementPdfUrl": previousAgreementPdf.asset->url
+  },
   "agreementEmailHistory": agreementEmailHistory[] | order(sentAt desc){
     sentAt,
     sentBy,
@@ -106,6 +117,7 @@ export async function getApplicationById(id: string, companyId?: string) {
     ...result,
     statusHistory: result.statusHistory ?? [],
     vehicleChangeHistory: result.vehicleChangeHistory ?? [],
+    scheduleChangeHistory: result.scheduleChangeHistory ?? [],
     agreementEmailHistory: result.agreementEmailHistory ?? [],
     renter: result.renter ?? {
       fullName: "",

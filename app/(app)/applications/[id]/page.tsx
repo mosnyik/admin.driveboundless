@@ -11,6 +11,7 @@ import { STATUS_CONFIG } from "@/components/admin/status-badge"
 import { StatusMenu } from "@/components/admin/status-menu"
 import { WaitingFlag } from "@/components/admin/waiting-flag"
 import { VehicleChangeDialog } from "@/components/admin/vehicle-change-dialog"
+import { ScheduleChangeDialog } from "@/components/admin/schedule-change-dialog"
 import { SendAgreementButton } from "@/components/admin/send-agreement-button"
 import { InsuranceForm } from "@/components/admin/insurance-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -212,7 +213,16 @@ export default async function ApplicationDetailPage({
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-serif text-lg">Rental details</CardTitle>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="font-serif text-lg">Rental details</CardTitle>
+              <ScheduleChangeDialog
+                applicationId={application.id}
+                startDate={rental.startDate}
+                startTime={rental.startTime}
+                endDate={rental.endDate}
+                rate={rental.rentalRate === "day" ? "day" : "week"}
+              />
+            </div>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <Field label="Purpose" value={rental.purpose} />
@@ -231,6 +241,57 @@ export default async function ApplicationDetailPage({
             {rental.additionalNotes && (
               <div className="sm:col-span-2">
                 <Field label="Additional notes" value={rental.additionalNotes} />
+              </div>
+            )}
+            {application.scheduleChangeHistory.length > 0 && (
+              <div className="border-t pt-4 sm:col-span-2">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Pick-up changes
+                </p>
+                <ul className="space-y-3">
+                  {application.scheduleChangeHistory.map((entry, index) => (
+                    <li key={index} className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="flex flex-wrap items-center gap-1.5 text-sm text-foreground">
+                          {entry.previousStartDate ? (
+                            <>
+                              <span className="text-muted-foreground">
+                                {formatDate(entry.previousStartDate, "MMM d, yyyy")} at {entry.previousStartTime}
+                              </span>
+                              <ArrowRight className="size-3.5 text-muted-foreground" />
+                            </>
+                          ) : null}
+                          <span className="font-medium">
+                            {formatDate(entry.newStartDate, "MMM d, yyyy")} at {entry.newStartTime}
+                          </span>
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Return {formatDate(entry.newEndDate, "MMM d, yyyy")} at {entry.newEndTime} · by{" "}
+                          {entry.changedBy} ·{" "}
+                          <span
+                            title={formatDate(entry.changedAt, "MMMM d, yyyy 'at' h:mm a")}
+                            suppressHydrationWarning
+                          >
+                            {formatDistanceToNowStrict(new Date(entry.changedAt), { addSuffix: true })}
+                          </span>
+                        </p>
+                      </div>
+                      {entry.previousAgreementPdfUrl && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-auto w-full justify-start px-4 py-2.5 text-left whitespace-normal sm:w-auto sm:shrink-0"
+                          asChild
+                        >
+                          <a href={entry.previousAgreementPdfUrl} target="_blank" rel="noreferrer">
+                            <Download className="size-4 shrink-0" />
+                            Previous agreement
+                          </a>
+                        </Button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </CardContent>
@@ -286,7 +347,7 @@ export default async function ApplicationDetailPage({
                 </span>
               </p>
               <p className="text-sm text-muted-foreground">
-                This reflects the vehicle currently on the booking. The original signed agreement is
+                This reflects the current vehicle and pick-up/return times on the booking. The original signed agreement is
                 preserved unchanged below.
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">

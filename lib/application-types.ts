@@ -71,6 +71,46 @@ export function isTerminalStatus(status: ApplicationStatus) {
   return status === "approved" || status === "declined"
 }
 
+export type RentalRate = "day" | "week"
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+function parseIsoDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) return null
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+}
+
+/** How many whole rate periods (days or weeks) the booking currently spans,
+ * rounded up and never less than one. */
+export function countRatePeriods(startDate: string, endDate: string, rate: RentalRate) {
+  const start = parseIsoDate(startDate)
+  const end = parseIsoDate(endDate)
+  if (start === null || end === null || end <= start) return 1
+  const periodDays = rate === "week" ? 7 : 1
+  return Math.max(1, Math.ceil((end - start) / DAY_MS / periodDays))
+}
+
+/** Derives the return date/time from a new pick-up: the same number of rate
+ * periods as the original booking, returning at the pick-up time. Dates are
+ * the plain `yyyy-MM-dd` strings the rental form stores, so the arithmetic
+ * is done in UTC to stay clear of DST shifts. */
+export function computeReturnSchedule(input: {
+  startDate: string
+  startTime: string
+  rate: RentalRate
+  periods: number
+}) {
+  const start = parseIsoDate(input.startDate)
+  if (start === null) return null
+  const periodDays = input.rate === "week" ? 7 : 1
+  const end = new Date(start + Math.max(1, input.periods) * periodDays * DAY_MS)
+  return {
+    endDate: end.toISOString().slice(0, 10),
+    endTime: input.startTime,
+  }
+}
+
 export function getWaitingHours(referenceDate: string | null) {
   if (!referenceDate) return null
   const ms = Date.now() - new Date(referenceDate).getTime()
@@ -107,6 +147,18 @@ export interface VehicleChangeEntry {
   previousAgreementPdfUrl: string | null
 }
 
+export interface ScheduleChangeEntry {
+  changedAt: string
+  changedBy: string
+  previousStartDate: string | null
+  previousStartTime: string | null
+  newStartDate: string
+  newStartTime: string
+  newEndDate: string
+  newEndTime: string
+  previousAgreementPdfUrl: string | null
+}
+
 export interface AgreementEmailEntry {
   sentAt: string
   sentBy: string
@@ -129,6 +181,7 @@ export interface ApplicationDetail {
   statusUpdatedAt: string | null
   statusHistory: StatusHistoryEntry[]
   vehicleChangeHistory: VehicleChangeEntry[]
+  scheduleChangeHistory: ScheduleChangeEntry[]
   agreementEmailHistory: AgreementEmailEntry[]
   renter: {
     fullName: string
@@ -156,7 +209,7 @@ export interface ApplicationDetail {
     endDate: string
     endTime: string
     visitorTimeZone: string
-    rentalRate: "day" | "week"
+    rentalRate: RentalRate
     paymentDueDay: string
     mileageAllowance: string
     additionalNotes?: string
