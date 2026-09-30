@@ -20,6 +20,7 @@ export interface AdminVehicle {
   year: number
   miles: number
   color: string
+  vin: string
   pricePerDay: number
   pricePerWeek: number
   minRentalDays: number
@@ -41,6 +42,7 @@ export interface VehicleFormValues {
   year: number
   miles: number
   color: string
+  vin: string
   pricePerDay: number | null
   pricePerWeek: number
   minRentalDays: number

@@ -33,6 +33,7 @@ const ADMIN_VEHICLE_FIELDS = `
   year,
   "miles": coalesce(miles, 0),
   color,
+  "vin": coalesce(vin, ""),
   "pricePerWeek": coalesce(pricePerWeek, round(coalesce(pricePerDay, 0) * 7 * 0.9)),
   "pricePerDay": coalesce(pricePerDay, round(coalesce(pricePerWeek, 0) / 7 / 0.9)),
   "minRentalDays": coalesce(minRentalDays, 1),

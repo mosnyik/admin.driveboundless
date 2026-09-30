@@ -29,6 +29,7 @@ const DEFAULT_VALUES: VehicleFormValues = {
   year: new Date().getFullYear(),
   miles: 0,
   color: "",
+  vin: "",
   pricePerDay: null,
   pricePerWeek: 0,
   minRentalDays: 1,
@@ -202,6 +203,20 @@ export function VehicleForm({
             value={values.seats}
             onChange={(event) => update("seats", Number(event.target.value))}
             required
+          />
+        </div>
+        <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="vin">
+            VIN
+          </Label>
+          <Input
+            id="vin"
+            value={values.vin}
+            onChange={(event) => update("vin", event.target.value.toUpperCase())}
+            placeholder="1HGCM82633A004352"
+            maxLength={17}
+            autoComplete="off"
+            className="font-mono uppercase"
           />
         </div>
       </div>

@@ -67,6 +67,7 @@ export default async function EditVehiclePage({
               year: vehicle.year,
               miles: vehicle.miles,
               color: vehicle.color,
+              vin: vehicle.vin,
               pricePerDay: vehicle.pricePerDay,
               pricePerWeek: vehicle.pricePerWeek,
               minRentalDays: vehicle.minRentalDays,

@@ -12,6 +12,10 @@ function validateValues(values: VehicleFormValues) {
   if (!Number.isFinite(values.year) || values.year < 1900) throw new Error("Enter a valid year.")
   if (!Number.isFinite(values.miles) || values.miles < 0) throw new Error("Enter a valid mileage.")
   if (!values.color.trim()) throw new Error("Color is required.")
+  const vin = normalizeVin(values.vin)
+  if (vin && !/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) {
+    throw new Error("VIN must be 17 characters (letters and numbers, no I, O or Q).")
+  }
   if (!Number.isFinite(values.pricePerWeek) || values.pricePerWeek < 0) {
     throw new Error("Enter a valid price per week.")
   }
@@ -29,6 +33,10 @@ function validateValues(values: VehicleFormValues) {
   if (!Number.isFinite(values.seats) || values.seats < 1) throw new Error("Enter a valid seat count.")
 }
 
+function normalizeVin(vin: string | undefined) {
+  return (vin ?? "").replace(/\s+/g, "").toUpperCase()
+}
+
 function buildFields(values: VehicleFormValues) {
   return {
     make: values.make.trim(),
@@ -36,6 +44,7 @@ function buildFields(values: VehicleFormValues) {
     year: values.year,
     miles: values.miles,
     color: values.color.trim(),
+    vin: normalizeVin(values.vin) || undefined,
     pricePerDay: values.pricePerDay ?? undefined,
     pricePerWeek: values.pricePerWeek,
     minRentalDays: values.minRentalDays,
@@ -116,19 +125,21 @@ export async function updateVehicle(id: string, values: VehicleFormValues, image
   const imageAssetId = await uploadImageIfProvided(imageFile)
 
   const companyRef = companyReference(companyId)
+  const fields = buildFields(values)
+  const unset = [...(companyRef ? [] : ["company"]), ...(fields.vin ? [] : ["vin"])]
 
   await sanityMutate([
     {
       patch: {
         id,
         set: {
-          ...buildFields(values),
+          ...fields,
           ...(imageAssetId
             ? { image: { _type: "image", asset: { _type: "reference", _ref: imageAssetId } } }
             : {}),
           ...(companyRef ? { company: companyRef } : {}),
         },
-        ...(companyRef ? {} : { unset: ["company"] }),
+        ...(unset.length > 0 ? { unset } : {}),
       },
     },
   ])

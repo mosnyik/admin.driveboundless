@@ -40,6 +40,7 @@ interface CurrentApplicationState {
     model: string
     year: number
     color: string
+    vin?: string | null
     pricePerDay: number
     pricePerWeek: number
     deliveryFee: number
@@ -61,6 +62,7 @@ const currentStateQuery = `*[_id == $id][0]{
     model,
     year,
     color,
+    vin,
     "pricePerDay": coalesce(pricePerDay, round(coalesce(pricePerWeek, 0) / 7 / 0.9)),
     "pricePerWeek": coalesce(pricePerWeek, round(coalesce(pricePerDay, 0) * 7 * 0.9)),
     "deliveryFee": coalesce(deliveryFee, 0),
@@ -142,6 +144,7 @@ export async function updateApplicationInsurance(
           model: vehicle.model,
           year: vehicle.year,
           color: vehicle.color,
+          vin: vehicle.vin ?? undefined,
           pricePerDay: vehicle.pricePerDay,
           pricePerWeek: vehicle.pricePerWeek,
           deliveryFee: vehicle.deliveryFee,
